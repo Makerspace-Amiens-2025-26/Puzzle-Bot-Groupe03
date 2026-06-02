@@ -24,13 +24,13 @@ Cette section décrit la première étape du processus de fabrication : la prép
 
 Cette phase de préparation se divise en trois étapes obligatoires pour sécuriser la fabrication : s'approprier la documentation, valider le matériel par des tests unitaires, puis procéder aux découpes mécaniques.
 
-### 1. 📚 Étude de la Documentation des Matériaux
+### 1.  Étude de la Documentation des Matériaux
 Avant toute manipulation, il est indispensable de consulter les fiches techniques (*datasheets*) des composants disponibles dans le dossier `docs/datasheets/` du dépôt.
 * **Vérification des tensions :** Identifier la tension nominale de chaque élément (5V pour l'Arduino, 12V/24V pour la CNC Shield et la pompe pneumatique).
 * ** brochage (Pinout) :** Repérer les broches de commande des drivers et le sens d'insertion sur la CNC Shield pour éviter les inversions.
 * **Limites mécaniques :** Prendre connaissance du couple maximal des moteurs pas-à-pas et de la course utile des axes pour ajuster les futurs fins de course.
 
-### 2. 🧪 Tests Individuels (Tests Unitaires du Matériel)
+### 2.  Tests Individuels (Tests Unitaires du Matériel)
 Chaque composant doit être validé indépendamment "sur table" avant l'assemblage final.
 
 * **L'Arduino Uno :** Brancher la carte seule en USB. Téléverser un programme servant à allumer les LED par exemple pour s'assurer que le microcontrôleur est fonctionnel.
@@ -39,13 +39,13 @@ Chaque composant doit être validé indépendamment "sur table" avant l'assembla
 * **Le Kit Pneumatique :** Alimenter brièvement la mini-pompe en 12V pour vérifier l'aspiration. Tester le déclenchement de l'électrovanne.
 * **Le Servomoteur :** Connecter à l'arduino, lancer un programme visant à le faire tourner 
 
-### 3. 📐 Découpage et Usinage
+### 3.  Découpage et Usinage
 Une fois l'électronique validée, on prépare la structure physique au MakerSpace.
 
 * **Profilés Aluminium :** Mesurer et marquer les longueurs de profilés nécessaires à l'aide d'un trusquin ou d'un réglet de précision. Effectuer la découpe à la scie à ruban ou à la scie circulaire à métaux. Ébavurer soigneusement les bords à la lime plate.
 * **Plaques de Support (Plexiglas/PMMA) :** Exporter les plans de la base du robot au format `.DXF`. Charger le fichier dans le logiciel de la découpeuse laser du MakerSpace. Ajuster la vitesse et la puissance selon l'épaisseur de la plaque pour obtenir une coupe nette sans brûlure.
 * **Pièces Imprimées 3D :** Générer les fichiers `.GCODE` via le slicer (Cura, PrusaSlicer) pour les pièces de fixation. Lancer les impressions et retirer délicatement les supports à la pince coupante.
-> 📣 **Rappel majeur :** L'autonomie au MakerSpace repose sur la responsabilité de chacun. Le respect de ces consignes protège les utilisateurs et garantit la longévité du matériel pédagogique.
+>  **Rappel majeur :** L'autonomie au MakerSpace repose sur la responsabilité de chacun. Le respect de ces consignes protège les utilisateurs et garantit la longévité du matériel pédagogique.
 
 ## ⚠️ Conseils de Sécurité & Gestion des Blocages
 ### 1. Sécurité Électrique : Protection du Matériel
