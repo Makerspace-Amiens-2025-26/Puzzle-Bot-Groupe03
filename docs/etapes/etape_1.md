@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Préparation des Matériaux
+title: Préparation du Matériels
 parent: Etapes de fabrication
 nav_order: 1
 ---
