@@ -23,7 +23,7 @@ Après la préparation des matériaux, l'étape suivante est l'assemblage comple
 
 ---
 
-## 🛠️ 1. Organisation du Poste de Travail
+##  1. Organisation du Poste de Travail
 
 Avant de commencer le montage, préparez un espace propre et bien rangé au MakerSpace. Cela évite de perdre des pièces ou de faire des erreurs.
 
@@ -32,7 +32,7 @@ Avant de commencer le montage, préparez un espace propre et bien rangé au Make
 
 ---
 
-## 🏗️ 2. Assemblage Initial (Le Châssis et les Axes X-Y)
+##  2. Assemblage Initial (Le Châssis et les Axes X-Y)
 
 Pour obtenir une machine stable, nous avons repensé la base afin de créer un système de portique qui quadrille parfaitement notre zone de travail.
 
@@ -46,7 +46,7 @@ Pour obtenir une machine stable, nous avons repensé la base afin de créer un s
 
 ---
 
-## 📐 3. Fixation et Montage de l'Axe Vertical (Z)
+##  3. Fixation et Montage de l'Axe Vertical (Z)
 
 L'axe Z est la partie qui descend pour attraper les pièces de puzzle et utilise un servomoteur pour les faire pivoter.
 
@@ -56,7 +56,7 @@ L'axe Z est la partie qui descend pour attraper les pièces de puzzle et utilise
 
 ---
 
-## 🔒 Vérifications Finales
+##  Vérifications Finales
 
 Avant de passer à la suite, effectuez ces derniers contrôles :
 
