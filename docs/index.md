@@ -27,7 +27,7 @@ Le projet Puzzle Bot a pour objectif de concevoir et de réaliser une machine au
 
 Voici le poster de notre projet Puzzle Bot, une machine conçue pour résoudre automatiquement des puzzles
 
-![Poster projet](https://github.com/Makerspace-Amiens-2025-26/Puzzle-Bot-Groupe03/commit/d3a1d69408d15616b09cb61b2d6859bd8635528f)
+[Poster projet](https://github.com/Makerspace-Amiens-2025-26/Puzzle-Bot-Groupe03/commit/c1e6a50b5ab4447f2fe35a2e37624f344f42be5e#diff-76a0877dde1e71b90b86dcc3091d066ac3c523d6648b61576fa321da0ef11064$)
 
 ## Vidéo
 
