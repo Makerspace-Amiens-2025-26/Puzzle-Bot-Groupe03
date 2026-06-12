@@ -33,15 +33,17 @@ Pour l'équipe d'étudiants, les objectifs pédagogiques sont :
 
 ## 4. Cahier des Charges (CdC)
 
-Pour encadrer la conception du Puzzle Bot, nous avons défini les critères techniques et fonctionnels suivants :
+## 🎯 Résumé du Cahier des Charges
 
-### 🔹 Fonctions Principales (Ce que le robot doit faire)
-* **Vision & Détection :** Le système doit être capable de scanner la zone de travail via une caméra supérieure, de distinguer les formes ou les couleurs des pièces et de calculer leurs coordonnées.
-* **Déplacement Précis (Axes X-Y) :** La tête robotisée doit se déplacer de manière fluide et précise au-dessus d'une zone de travail parfaitement quadrillée par des profilés aluminium.
-* **Saisie et Manipulation (Axe Z & Pneumatique) :** Le robot doit pouvoir descendre verticalement, attraper une pièce à l'aide d'une ventouse (système d'aspiration par le vide), la soulever et la faire pivoter (via un servomoteur) pour la repositionner correctement.
+Le projet consiste à créer un robot autonome en 90 heures au MakerSpace, sans plans existants, capable de résoudre un puzzle.
 
-### 🔸 Contraintes Techniques (Les règles à respecter)
-* **Matériaux imposés :** Utilisation d'une carte Arduino Uno couplée à une CNC Shield V3 pour le contrôle des moteurs pas-à-pas (NEMA 17).
-* **Structure et Fixations :** Utilisation d'une planche en Plexiglas (PMMA) de 5 mm d'épaisseur comme base solide, et de profilés aluminium de type V-Slot.
-* **Fabrication locale :** Toutes les pièces de liaison spécifiques (coudes d'angles, supports moteurs, chariot mobile, support caméra) doivent être modélisées en CAO et imprimées en 3D au MakerSpace.
-* **Sécurité et Fiabilité :** Le système doit intégrer une gestion rigoureuse des câbles et tuyaux pour éviter les blocages lors des translations, et le circuit électrique doit être protégé contre les inversions de polarité.
+### 🔹 1. Ce que le robot doit faire (Les Missions)
+* **Vision :** Filmer la zone avec une caméra pour repérer les pièces de puzzle et calculer leur position.
+* **Déplacement (X / Y) :** Bouger précisément d'avant en arrière et de gauche à droite pour se placer au-dessus de la bonne pièce.
+* **Saisie (Z) :** Descendre l'axe vertical, aspirer la pièce avec une ventouse via une mini-pompe, la soulever et la faire tourner dans le bon sens grâce à un servomoteur.
+
+### 🔸 2. Ce que nous devons respecter (Les Règles)
+* **Conception 3D :** Tout dessiner sur OnShape et imprimer nos propres pièces en 3D (coins pour le cadre, roues pour les axes, chariot mobile et support caméra).
+* **Matériel imposé :** Utiliser une base en Plexiglas, des barres en aluminium, une carte Arduino Uno et une CNC Shield pour contrôler les moteurs.
+* **Sécurité :** Attacher proprement les câbles et les tuyaux pour éviter les blocages, et vérifier les branchements pour ne pas griller les composants.
+* **Partage :** Rédiger une documentation claire sur GitHub pour que d'autres étudiants puissent refaire la machine facilement.
