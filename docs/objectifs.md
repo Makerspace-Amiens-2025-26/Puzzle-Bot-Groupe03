@@ -33,16 +33,16 @@ Pour l'équipe d'étudiants, les objectifs pédagogiques sont :
 
 ## 4. Cahier des Charges (CdC)
 
-## 🎯 Résumé du Cahier des Charges
+##  Résumé du Cahier des Charges
 
 Le projet consiste à créer un robot autonome en 90 heures au MakerSpace, sans plans existants, capable de résoudre un puzzle.
 
-### 🔹 1. Ce que le robot doit faire (Les Missions)
+###  1. Ce que le robot doit faire (Les Missions)
 * **Vision :** Filmer la zone avec une caméra pour repérer les pièces de puzzle et calculer leur position.
 * **Déplacement (X / Y) :** Bouger précisément d'avant en arrière et de gauche à droite pour se placer au-dessus de la bonne pièce.
 * **Saisie (Z) :** Descendre l'axe vertical, aspirer la pièce avec une ventouse via une mini-pompe, la soulever et la faire tourner dans le bon sens grâce à un servomoteur.
 
-### 🔸 2. Ce que nous devons respecter (Les Règles)
+###  2. Ce que nous devons respecter (Les Règles)
 * **Conception 3D :** Tout dessiner sur OnShape et imprimer nos propres pièces en 3D (coins pour le cadre, roues pour les axes, chariot mobile et support caméra).
 * **Matériel imposé :** Utiliser une base en Plexiglas, des barres en aluminium, une carte Arduino Uno et une CNC Shield pour contrôler les moteurs.
 * **Sécurité :** Attacher proprement les câbles et les tuyaux pour éviter les blocages, et vérifier les branchements pour ne pas griller les composants.
