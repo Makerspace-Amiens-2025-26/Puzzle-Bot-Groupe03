@@ -25,7 +25,7 @@ Le projet Puzzle Bot a pour objectif de concevoir et de réaliser une machine au
 
 ## Poster
 
-Ici vous publierez le poster de votre projet.
+Voici le poster de notre projet Puzzle Bot, une machine conçue pour résoudre automatiquement des puzzles
 
 ![Poster projet](images/poster.jpg)
 
