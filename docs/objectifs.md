@@ -31,9 +31,8 @@ Pour l'équipe d'étudiants, les objectifs pédagogiques sont :
 
 ---
 
-## 4. Cahier des Charges (CdC)
+## 4. Cahier des Charges 
 
-##  Résumé du Cahier des Charges
 
 Le projet consiste à créer un robot autonome en 90 heures au MakerSpace, sans plans existants, capable de résoudre un puzzle.
 
