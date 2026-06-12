@@ -7,7 +7,7 @@ permalink: /
 
 # Bienvenue sur notre documentation
 
-Bienvenue dans la documentation du projet XY. Ce site a pour but de fournir toutes les informations nécessaires pour comprendre, utiliser et reproduire efficacement notre projet.
+Bienvenue dans la documentation du projet PUZZLE BOT. Ce site a pour but de fournir toutes les informations nécessaires pour comprendre, utiliser et reproduire efficacement notre projet.
 
 [Notre projet sur Onshape](https://cad.onshape.com/documents/f68d7b4e4c596dbd307bcac0/w/5ce81b40307e52fb876e4acc/e/4f4f3f44fe039d3cdeee6809?renderMode=0&uiState=6a2c0de5de023122afe3fe36){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
 [Notre repo GitHub](https://github.com/Makerspace-Amiens/template-project){: .btn .fs-5 .mb-4 .mb-md-0 }
