@@ -4,7 +4,7 @@ nav_order: 3
 title: Objectifs du projet
 ---
 
-# Présentation Générale du Projet
+## Présentation Générale du Projet
 
 ## 1. Introduction
 
