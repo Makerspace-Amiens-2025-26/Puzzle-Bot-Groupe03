@@ -50,9 +50,9 @@ Une fois l'électronique validée, on prépare la structure physique au MakerSpa
 * **Profilés Aluminium :** Mesurer et marquer les longueurs de profilés nécessaires à l'aide d'un trusquin ou d'un réglet de précision. Effectuer la découpe à la scie à ruban ou à la scie circulaire à métaux. Ébavurer soigneusement les bords à la lime plate.
 * **Plaques de Support (Plexiglas/PMMA) :** Exporter les plans de la base du robot au format `.DXF`. Charger le fichier dans le logiciel de la découpeuse laser du MakerSpace. Ajuster la vitesse et la puissance selon l'épaisseur de la plaque pour obtenir une coupe nette sans brûlure.
 * **Pièces Imprimées 3D :** Générer les fichiers `.GCODE` via le slicer (Cura, PrusaSlicer) pour les pièces de fixation. Lancer les impressions et retirer délicatement les supports à la pince coupante.
->  **Rappel majeur :** L'autonomie au MakerSpace repose sur la responsabilité de chacun. Le respect de ces consignes protège les utilisateurs et garantit la longévité du matériel pédagogique.
 
-##Conseils de Sécurité & Gestion des Blocages
+
+## Conseils de Sécurité & Gestion des Blocages
 ### 1. Sécurité Électrique : Protection du Matériel
 * **Double vérification des alimentations :** Avant de mettre le système sous tension, validez systématiquement les polarités au multimètre. Une inversion de polarité ou une tension trop élevée (ex: envoyer du 12V directement sur une broche 5V de l'Arduino) détruira instantanément vos composants.
 * **Manipulations hors tension :** Ne connectez et ne déconnectez **jamais** un moteur pas-à-pas ou un driver de la CNC Shield lorsque la carte est alimentée. Cela crée des arcs électriques internes qui grillent les puces instantanément.
