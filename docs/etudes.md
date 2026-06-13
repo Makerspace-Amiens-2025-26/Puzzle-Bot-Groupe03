@@ -129,7 +129,7 @@ L'électronique du robot Puzzle-Bot a été pensée pour répondre à trois beso
 ### 3. La gestion de l'aspiration (Carte sur mesure plutôt que des relais)
 * *Notre choix :* On a fabriqué notre propre petite carte électronique (avec des composants appelés MOSFETs) au lieu d'acheter des interrupteurs automatiques classiques (relais).
 * *Pourquoi ce choix ?*Tout d’abord, nous avons remarqué que notre alimentation de 12.7 V était très importante pour la pompe. Pour éviter de griller la pompe, nous avons du fabriquer une carte électronique afin de commander les mosfets pour le bon fonctionnement de système d’aspiration. Ensuite, nous avons également fait ce choix pour lâcher la pièce de puzzle au bon endroit, la vanne doit s'ouvrir instantanément. Les relais mécaniques sont trop lents et finissent par s'user. Nos composants (MOSFETs) fonctionnent comme des interrupteurs ultra-rapides et silencieux. De plus, on y a soudé des composants de protection (diodes) car les pompes créent des chocs électriques quand on les éteint, ce qui pourrait griller notre circuit.
- ![PLATEAU SUPPORT](https://i.postimg.cc/8zYfvX3F/Whats-App-Image-2026-06-13-at-21-59-52.jpg)
+ ![PLATEAU SUPPORT](https://i.postimg.cc/qMT2jFjY/Whats-App-Image-2026-06-13-at-21-59-52.jpg)
 ### 4. Deux circuits électriques séparés
 * *Notre choix :* On utilise deux alimentations totalement séparées.
 * *Pourquoi ce choix ?* C'est une question de stabilité. On a séparé l'énergie en deux circuits :
