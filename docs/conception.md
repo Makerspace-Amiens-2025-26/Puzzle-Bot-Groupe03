@@ -149,3 +149,4 @@ graph LR
     Y -- "Fil Signal" --> CY
     GY -- "Fil Masse" --> CY
 ```
+I.Conception mecanique 
