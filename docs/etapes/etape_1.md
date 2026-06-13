@@ -12,6 +12,9 @@ Cette section décrit la première étape du processus de fabrication : la prép
 ## Liste des Matériaux
 
 | Visuel | Composant | Description & Rôle | Spécifications / Usage |
+Voici la liste des composants utilisés pour le projet.
+
+| Visuel | Composant | Description & Rôle | Spécifications / Usage |
 | :---: | :--- | :--- | :---: |
 | <img src="https://makerspace-amiens.fr/puzzle-bot/docs/hardware/arduino-uno/image.png" width="80"> | **Arduino Uno** | Carte à microcontrôleur principale. C'est le cerveau du robot qui exécute la logique de commande. | 1 unité |
 | <img src="https://makerspace-amiens.fr/puzzle-bot/docs/hardware/cnc-shield/image.png" width="80"> | **CNC Shield (V3)** | Carte d'extension pour l'Arduino. Permet de centraliser le câblage et de piloter facilement plusieurs axes. | 1 unité |
@@ -20,6 +23,8 @@ Cette section décrit la première étape du processus de fabrication : la prép
 | <img src="https://makerspace-amiens.fr/puzzle-bot/docs/hardware/servomotor/image.png" width="80"> | **Servomoteur** | Actionneur rotatif idéal pour piloter un mouvement angulaire limité (par exemple, l'orientation de la ventouse ou un mécanisme d'échappement). | Selon design |
 | <img src="https://makerspace-amiens.fr/puzzle-bot/docs/hardware/stepper/17HE12-1204S-500x500.jpg" width="80"> | **Moteur pas-à-pas (NEMA 17)** | Moteur haute précision pour gérer les déplacements linéaires ou angulaires précis des axes du robot. | Selon axes |
 | <img src="https://sp.yimg.com/ib/th?id=OPEC.P%2fF%2flbnDYJb0oA474C474&o=5&pid=21.1&w=160&h=105" width="80"> | **Profilés Aluminium** (Type V-Slot 2020) | Structure principale et axes linéaires du châssis. | 4 x 400mm |
+
+---
 ## Procédure de Préparation
 
 Cette phase de préparation se divise en trois étapes obligatoires pour sécuriser la fabrication : s'approprier la documentation, valider le matériel par des tests unitaires, puis procéder aux découpes mécaniques.
