@@ -4,9 +4,9 @@ nav_order: 4
 title: Études et choix techniques
 ---
 
-# ÉTUDE ET CHOIX TECHNIQUE
+## ÉTUDE ET CHOIX TECHNIQUE
 
-# I. Cahier des charges – Projet Puzzle Bot
+## I. Cahier des charges – Projet Puzzle Bot
 ## 1. Contexte
 
 Ce projet s'inscrit dans une démarche d'apprentissage en ingénierie mêlant mécanique, électronique, informatique et vision par ordinateur.
