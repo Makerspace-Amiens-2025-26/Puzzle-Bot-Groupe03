@@ -104,6 +104,7 @@ Un boîtier électronique a été conçu pour regrouper et protéger l'ensemble 
  
  
 Un support dédié au profilé de maintien de la caméra ainsi qu'à son système de fixation.
+
  ![PLATEAU SUPPORT](https://i.postimg.cc/Z5bFK3S0/Capture-d-ecran-2026-06-13-201106.png)
  
 Cette organisation facilite le câblage de l'ensemble du système.
