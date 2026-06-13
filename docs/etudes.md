@@ -45,8 +45,8 @@ Informatiques
 * Utilisation d'algorithmes de vision par ordinateur.
 * Interface de configuration et de supervision.
 ## 5. Performances attendues
-* Précision de positionnement inférieure à 2 mm.
-* Détection fiable des pièces supérieure à 90 %.
+* Précision de positionnement 
+* Détection fiable des pièces 
 * Fonctionnement continu sans intervention humaine.
 * Assemblage progressif et reproductible.
 ## 6. Sécurité
@@ -99,10 +99,11 @@ Un boîtier électronique a été conçu pour regrouper et protéger l'ensemble 
 - Un support pour le bouton d'arrêt d'urgence.
 - Un support pour la carte de contrôle.
 - Un support pour les capteurs de fin de course.
-- Un support dédié au profilé de maintien de la caméra ainsi qu'à son système de fixation.
   
  ![PLATEAU SUPPORT](https://i.postimg.cc/4dmW4cph/Capture-d-ecran-2026-06-13-200942.png)
  
+ 
+Un support dédié au profilé de maintien de la caméra ainsi qu'à son système de fixation.
  ![PLATEAU SUPPORT](https://i.postimg.cc/Z5bFK3S0/Capture-d-ecran-2026-06-13-201106.png)
  
 Cette organisation facilite le câblage de l'ensemble du système.
@@ -143,9 +144,9 @@ L'électronique du robot Puzzle-Bot a été pensée pour répondre à trois beso
 ### 6. Le choix des moteurs (Pas à pas et Servomoteur)
 * *Notre choix :* Des moteurs "pas à pas" (NEMA 17) pour déplacer le bras sur la table, et deux petits "servomoteurs" (MG996R) pour tourner la pièce de puzzle et le deuxième qui permet le mouvement de translation de la ventouse pour qu’il puisse aller chercher la pièce.
 * *Pourquoi ce choix ?* * *Les moteurs pas à pas :* Ils tournent cran par cran (comme les aiguilles d'une montre). En comptant le nombre de crans envoyés, l'ordinateur sait exactement à quel endroit de la table se trouve le robot, au millimètre près, sans avoir besoin de caméras ou de capteurs complexes pour se repérer.
-  * *Le servomoteur :* Il est très léger et possède une intelligence intégrée qui lui permet de tourner à un angle très précis. Il est parfait pour pivoter la pièce de puzzle (ex: "tourne de 45 degrés") au bout du bras, sans alourdir la machine.
+* *Le servomoteur :* Il est très léger et possède une intelligence intégrée qui lui permet de tourner à un angle très précis. Il est parfait pour pivoter la pièce de puzzle (ex: "tourne de 45 degrés") au bout du bras, sans alourdir la machine.
  ![PLATEAU SUPPORT](https://i.postimg.cc/90PytPTX/Capture-d-ecran-2026-06-13-220557.png)
-
+ ![PLATEAU SUPPORT](https://i.postimg.cc/mgYKzKh0/Chariot.jpg)
 ### 7. Les capteurs de fin de course
 * *Notre choix :* Des petits interrupteurs mécaniques placés aux extrémités des axes de déplacement.
 * *Pourquoi ce choix ?* Les moteurs pas à pas sont "aveugles" : quand on allume la machine, le robot ne sait pas où se trouve son bras. Il a donc besoin d'un point de repère. Au démarrage, le robot bouge jusqu'à venir taper doucement contre ces interrupteurs. Dès que le bouton fait "clic", le robot sait qu'il est arrivé à son point de départ (le point Zéro). Cela sert aussi de sécurité pour empêcher le robot de continuer à forcer et de s'écraser contre les bords de sa propre structure.
