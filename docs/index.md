@@ -12,7 +12,7 @@ Bienvenue dans la documentation du projet PUZZLE BOT. Ce site a pour but de four
 [Notre projet sur Onshape](https://cad.onshape.com/documents/f68d7b4e4c596dbd307bcac0/w/5ce81b40307e52fb876e4acc/e/4f4f3f44fe039d3cdeee6809?renderMode=0&uiState=6a2c0de5de023122afe3fe36) Consultez egalement,
 [Notre repo GitHub](https://makerspace-amiens-2025-26.github.io/Puzzle-Bot-Groupe03/)
 
-<iframe height="600" width="100%" src="https://autode.sk/4en71X2" frameborder="0"></iframe>
+<iframe height="600" width="100%" src="https://sketchfab.com/3d-models/puzzle-bot-8e1213d5d09d41fabed07b3077e8b436" frameborder="0"></iframe>
 
 <script type="module"
 src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js">
