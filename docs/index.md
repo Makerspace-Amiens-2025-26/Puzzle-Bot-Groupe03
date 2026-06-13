@@ -17,11 +17,11 @@ Bienvenue dans la documentation du projet PUZZLE BOT. Ce site a pour but de four
 
 ## À propos du Projet
 
-Le Puzzle-Bot est un système robotique automatisé conçu pour identifier, trier et assembler les pièces d'un puzzle de manière autonome. Ce projet intègre trois domaines de l'ingénierie :
+Le Puzzle-Bot est une machine conçue pour identifier, trier et assembler les pièces d'un puzzle de manière autonome. Ce projet intègre trois domaines de l'ingénierie :
 * **Informatique & Vision :** Détection des pièces et calcul des trajectoires via vision par ordinateur.
 * **Électronique & Embarqué :** Interfaçage de puissance, commande de moteurs pas à pas et gestion d'actionneurs pneumatiques via microcontrôleur.
-* **Mécanique :** Cinématique cartésienne pour le positionnement spatial et préhension par le vide.
-
+* **Conception Mécanique :** realisation et mise au point des composants du système. 
+  
 ## Poster
 
 Voici le poster de notre projet Puzzle Bot, une machine conçue pour résoudre automatiquement des puzzles
