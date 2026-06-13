@@ -65,7 +65,7 @@ Informatiques
 
 # II. Choix techniques de conception
 
-## la mecanique
+## LA MÉCANIQUE
 Les choix techniques concernant la conception de notre machine ont été réalisés de manière progressive après l'identification des différents besoins du projet ainsi que des contraintes liées aux mouvements, à la précision de positionnement et à l'intégration des composants mécaniques et électroniques.
 
 ## Structure mécanique
@@ -105,4 +105,7 @@ Un boîtier électronique a été conçu pour regrouper et protéger l'ensemble 
  
  ![PLATEAU SUPPORT](https://i.postimg.cc/Z5bFK3S0/Capture-d-ecran-2026-06-13-201106.png)
  
-Cette organisation facilite le câblage, la maintenance et la sécurité de l'ensemble du système.
+Cette organisation facilite le câblage de l'ensemble du système.
+
+## l'ÉLECTRONIQUE 
+
