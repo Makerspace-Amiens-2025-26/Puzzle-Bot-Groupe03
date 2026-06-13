@@ -14,7 +14,16 @@ Bienvenue dans la documentation du projet PUZZLE BOT. Ce site a pour but de four
 
 <iframe height="600" width="100%" src="https://autode.sk/4en71X2" frameborder="0"></iframe>
 
+<script type="module"
+src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js">
+</script>
 
+<model-viewer
+src="PuzzleBot.glb"
+camera-controls
+auto-rotate
+style="width:100%;height:600px;">
+</model-viewer>
 
 
 ## À propos du Projet
