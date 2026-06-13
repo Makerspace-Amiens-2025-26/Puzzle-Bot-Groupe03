@@ -21,7 +21,12 @@ Le Puzzle-Bot est une machine conçue pour identifier, trier et assembler les pi
 * **Informatique & Vision :** Détection des pièces et calcul des trajectoires via vision par ordinateur.
 * **Électronique & Embarqué :** Interfaçage de puissance, commande de moteurs pas à pas et gestion d'actionneurs pneumatiques via microcontrôleur.
 * **Conception Mécanique :** realisation et mise au point des composants du système. 
-  
+
+## L'Équipe (Groupe 03)
+* Bracins FOKEM & Elsy KOUNDA - Conception mécanique & CAO
+* Joseph MOUTASSI & Anthony MVONO - Programmation & Vision par ordinateur 
+* Donna MBOGNIE & Andy METOGO - Architecture Électronique
+
 ## Poster
 
 Voici le poster de notre projet Puzzle Bot, une machine conçue pour résoudre automatiquement des puzzles
