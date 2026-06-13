@@ -38,12 +38,10 @@ Pour obtenir une machine stable, nous avons repensé la base afin de créer un s
 
 ### Le Cadre et le Quadrillage de la Zone (Axe X)
 * **Les nouveaux coudes d'angle (Corners) :** Commencez par installer les nouveaux coudes en plastique conçus en 3D aux quatre coins de la planche en Plexiglas. Ils servent à maintenir fermement les deux grands profilés en aluminium parallèles. Cela crée un cadre rigide et un repère fixe pour délimiter la zone de travail.
-
-  <img src="https://github.com/Makerspace-Amiens-2025-26/Puzzle-Bot-Groupe03/blob/main/docs/images/Chariot.jpeg" width="200">
     
 * **Le profilé mobile et ses supports à roues :** Prenez le profilé en aluminium qui traverse la machine pour l'axe X. Fixez à ses deux extrémités les deux pièces 3D spécifiques sur lesquelles sont vissées des roues de guidage. Emboîtez ces roues dans les rails du cadre. Pour motoriser ce déplacement, l'une de ces deux pièces d'extrémité est dotée d'un moteur pas-à-pas. Ainsi, ce côté est entraîné directement par le moteur, ce qui permet de déplacer l'ensemble du profilé mobile de manière fluide sur l'axe X, tout en le maintenant bien droit et sans qu'il ne se mette de travers.
 
-  <img src="https://github.com/Makerspace-Amiens-2025-26/Puzzle-Bot-Groupe03/blob/main/docs/images/Chariot.jpeg" width="200">
+  <img src="https://github.com/Makerspace-Amiens-2025-26/Puzzle-Bot-Groupe03/blob/main/docs/images/Twins%20piece%201.jpeg" width="200">
 
 ###  Le Chariot Mobile (Axe Y)
 * **Le bloc central coulissant :** Assemblez le groupe de pièces 3D autour du profilé mobile. Une fois vissées ensemble, ces pièces forment un unique bloc compact qui glisse de gauche à droite sur l'axe Y. C'est ce bloc qui porte tout le système de l'axe Z (la pompe, l'électrovanne et la ventouse) pour déplacer les pièces de puzzle.
@@ -60,7 +58,7 @@ L'axe Z est installé directement sur le chariot de l'axe Y. Il gère la descent
 * **L'installation de la pompe et de la vanne :** Fixez la mini-pompe à air et l'électrovanne directement sur le chariot mobile. En les plaçant ici, tout le système pneumatique se déplace en même temps que le robot.
 * **Le support de la caméra (Suivi du mouvement) :** Fixez la pièce 3D de la caméra sur la partie mobile de l'axe Z. De cette façon, la caméra descend en même temps que la pompe pour suivre précisément la saisie de la pièce de puzzle.
 
-  <img src="" width="200">
+  <img src="https://github.com/Makerspace-Amiens-2025-26/Puzzle-Bot-Groupe03/blob/main/docs/images/Support%20Camera.jpeg" width="200">
   
 * **Le support coudé du servomoteur et de la ventouse :** Tout en bas de l'axe Z, installez le support en coude (à 90°) imprimé en 3D. Fixez-y le servomoteur et la ventouse reliée aux tuyaux en silicone. Ce coude permet à la ventouse de tourner la pièce sur elle-même sans la décaler du centre.
 ---
