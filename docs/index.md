@@ -12,7 +12,7 @@ Bienvenue dans la documentation du projet PUZZLE BOT. Ce site a pour but de four
 [Notre projet sur Onshape](https://cad.onshape.com/documents/f68d7b4e4c596dbd307bcac0/w/5ce81b40307e52fb876e4acc/e/4f4f3f44fe039d3cdeee6809?renderMode=0&uiState=6a2c0de5de023122afe3fe36) Consultez egalement,
 [Notre repo GitHub](https://makerspace-amiens-2025-26.github.io/Puzzle-Bot-Groupe03/)
 
-<iframe height="600" width="100%" src="https://modelembedder.net/embed?did=2860ed3d58f1b518e6857770&wvm=v&wvmid=6280fca954e7770df59e5a2f&eid=0cab16137cd459ee83ebe56e&elementType=ASSEMBLY" frameborder="0"></iframe>
+<iframe height="600" width="100%" src="https://autode.sk/4en71X2" frameborder="0"></iframe>
 
 {: .warning }
 >Pour intégrer la visualisation de votre projet Onshape, utilisez le site https://modelembedder.net . Activez le partage par lien via l'outil de partage de Onshape. n'oubliez pas d'activer l'option "export". Puis completez l'iframe ci-dessus avec le lien généré par le site https://modelembedder.net. Vous pouvez mettre à jour également le bouton avec le lien de partage de votre modèle.
