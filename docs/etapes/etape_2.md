@@ -43,7 +43,7 @@ Pour obtenir une machine stable, nous avons repensé la base afin de créer un s
 ### Le Chariot Mobile (Axe Y)
 * **Le bloc central coulissant :** Assemblez le groupe de pièces 3D qui entoure le profilé mobile. Une fois vissées ensemble, ces pièces forment un unique bloc compact et ultra-rigide qui translate d'un côté à l'autre de l'axe Y, et qui supportera tout l'axe vertical (Z).
 * **Le support de la caméra :** Fixez la pièce 3D spécialement conçue pour accueillir la caméra de vision. Ce support la maintient parfaitement stable et orientée vers le bas pour scanner la zone, identifier les formes des pièces et donner les coordonnées au robot.
-
+<img src="https://github.com/Makerspace-Amiens-2025-26/Puzzle-Bot-Groupe03/blob/main/docs/images/Chariot.jpeg" width="400">
 ---
 
 ##  3. Fixation et Montage de l'Axe Vertical (Z)
