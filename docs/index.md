@@ -26,7 +26,7 @@ Le Puzzle-Bot est une machine conçue pour identifier, trier et assembler les pi
 
 Voici le poster de notre projet Puzzle Bot, une machine conçue pour résoudre automatiquement des puzzles
 
-![Poster projet](https://i.postimg.cc/3JbXf23Y/Whats-App-Image-2026-06-03-at-08-46-01.jpg)
+![Poster projet](https://i.postimg.cc/Kj48Vk5R/poster.jpg)
 
 ## Vidéo
 
