@@ -9,7 +9,7 @@ title: Études et choix techniques
 # Cahier des charges – Projet Puzzle Bot
 ## 1. Contexte
 
-Le projet Puzzle Bot consiste à concevoir et fabriquer une machine capable de résoudre automatiquement un puzzle. Ce projet s'inscrit dans une démarche d'apprentissage en ingénierie mêlant mécanique, électronique, informatique et vision par ordinateur.
+Ce projet s'inscrit dans une démarche d'apprentissage en ingénierie mêlant mécanique, électronique, informatique et vision par ordinateur.
 
 ## 2. Objectif
 
