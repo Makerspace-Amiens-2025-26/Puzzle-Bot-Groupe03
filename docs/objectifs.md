@@ -3,31 +3,24 @@ layout: default
 nav_order: 3
 title: Objectifs du projet
 ---
-#  Présentation Générale du Projet
+
+# Présentation Générale du Projet
 
 ## 1. Introduction
-« Puzzle Bot » est un projet pratique et innovant développé au sein du MakerSpace d'UniLaSalle Amiens. L'idée centrale est de concevoir et de réaliser de A à Z une machine automatisée intelligente, en partant d'une feuille blanche et sans plans préexistants. 
 
-Ce projet propose une approche concrète et stimulante de la robotique en combinant quatre disciplines majeures de l'ingénierie : **la mécanique, l'électronique, la programmation et la vision par ordinateur**.
-
----
+Le projet **Puzzle Bot** consiste à concevoir et réaliser une machine automatisée capable de résoudre un puzzle de manière autonome. Ce projet mobilise plusieurs domaines de l’ingénierie, notamment la conception mécanique, l’électronique, la programmation, la vision par ordinateur et la fabrication numérique. L’objectif est de développer un système complet capable de détecter, manipuler et assembler des pièces de puzzle avec précision.
 
 ## 2. Contexte du Projet
-Dans le monde de l'industrie et de la recherche, les ingénieurs doivent souvent créer des solutions sur mesure pour répondre à des besoins spécifiques, sans pouvoir s'appuyer sur des guides existants. 
 
-Inspiré par l'esprit créatif de créateurs de contenu et ingénieurs reconnus comme **Mark Rober** ou **Stuff Made Here**, ainsi que par la philosophie du mouvement *Open Source*, le projet Puzzle Bot place les étudiants dans une situation réelle de conception en autonomie. Face à un problème donné, l'équipe doit imaginer la structure, dessiner les pièces, choisir les composants et programmer l'intelligence du robot en exploitant les ressources et les outils de fabrication numérique disponibles au MakerSpace (imprimantes 3D, découpeuse laser).
-
----
+Ce projet s'inscrit dans le cadre du programme MakerSpace et vise à mettre en pratique les compétences acquises au cours de la formation. Inspiré de projets open source existants et des problématiques industrielles liées à l'automatisation, Puzzle Bot représente un défi technique multidisciplinaire. Il permet aux étudiants de travailler en équipe sur un projet concret intégrant la conception, le prototypage, les tests et l'amélioration continue d'un système robotisé.
 
 ## 3. Objectifs du Projet
 
-L'objectif principal est de construire un système automatisé capable d'identifier, de saisir et de déplacer des pièces de manière autonome pour accomplir une tâche précise (tri, assemblage ou résolution de puzzle).
+Les principaux objectifs du projet sont :
 
-Pour l'équipe d'étudiants, les objectifs pédagogiques sont :
-* **Concevoir en autonomie :** Passer de l'idée théorique à un prototype physique fonctionnel.
-* **Maîtriser la chaîne mécatronique :** Faire interagir du code (Arduino), des cartes électroniques (CNC Shield), des moteurs et des capteurs.
-* **Intégrer l'intelligence artificielle / Vision :** Permettre au robot de "voir" son environnement grâce à une caméra pour prendre des décisions en temps réel.
-* **Travailler en mode Agile :** Adapter l'architecture de la machine au fil des tests (comme le passage d'un modèle simple à une structure de portique X-Y).
-
----
-
+- Concevoir une structure mécanique capable de déplacer un système de préhension avec précision.
+- Développer un système de vision permettant de détecter et d'identifier les pièces du puzzle.
+- Programmer le contrôle des moteurs, capteurs et actionneurs nécessaires au fonctionnement de la machine.
+- Mettre en œuvre un algorithme permettant de déterminer la position des pièces dans le puzzle final.
+- Assembler automatiquement les pièces afin de reconstituer l'image du puzzle.
+- Développer les compétences techniques et méthodologiques des membres de l'équipe à travers un projet d'ingénierie complet.
