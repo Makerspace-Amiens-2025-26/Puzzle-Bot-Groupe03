@@ -182,4 +182,63 @@ Pour finaliser la machine, la rendre autonome et sécuriser les utilisateurs, un
 * *Module Vision :* Le boîtier intègre également la base de maintien du profilé vertical dédié à la caméra. Ce système de fixation garantit que l'objectif reste parfaitement stable et centré au-dessus de la zone de travail, ce qui est crucial pour la précision de l'algorithme de détection.
 
 * ![Modélisation du boîtier électronique](https://i.postimg.cc/ZYGXj6BL/Capture-d-ecran-2026-06-13-233236.png)
+  
 # III. programmation  
+
+##  Architecture et Logique
+
+La partie logicielle du Puzzle-Bot est divisée en deux niveaux distincts qui communiquent ensemble : un niveau "Haut" (le cerveau analytique sur ordinateur) et un niveau "Bas" (l'exécutant mécanique sur l'Arduino).
+
+### Architecture Logicielle Globale
+
+* *Le Traitement d'Image (Haut Niveau) :* Un programme tournant sur l'ordinateur utilise la caméra pour détecter la position des pièces, calcule leur orientation, et détermine les coordonnées et l'angle de rotation nécessaires.
+* *La Communication Série :* L'ordinateur traduit ces coordonnées en instructions textuelles et les envoie à la carte Arduino via un câble USB.
+* *Le Contrôle Mécanique (Bas Niveau) :* Le code de l'Arduino traduit les instructions en signaux électriques (PWM, impulsions de pas, commandes statiques).
+
+```mermaid
+graph TD
+    subgraph Ordinateur - Haut Niveau
+        C[Caméra] -->|Flux vidéo| V[Algorithme de Vision <br/> Détection & Calculs]
+        V -->|Génération de trajectoire| TX[Envoi des commandes <br/> Ex: X150 Y200 Z-Descente]
+    end
+
+    subgraph Arduino - Bas Niveau
+        RX[Réception Série] --> P[Analyseur de commandes]
+        P -->|Impulsions| M[Moteurs Pas à Pas <br/> Déplacement X/Y]
+        P -->|PWM| S[Servomoteurs <br/> Z et Rotation]
+        P -->|HIGH/LOW| PN[MOSFETs <br/> Pompe et Vanne]
+    end
+
+    TX -->|Câble USB| RX
+```
+
+### Séquençage et Machine d'États (Le Cycle de Travail)
+
+Le code de l'Arduino est structuré comme une "machine d'états". Le robot exécute une séquence d'actions stricte pour chaque pièce de puzzle, avec des temporisations ajustées pour la gestion du vide pneumatique.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Attente_Commande
+    Attente_Commande --> Deplacement_XY : Réception Coordonnées
+    Deplacement_XY --> Descente_Z : Position Atteinte
+    Descente_Z --> Aspiration : Activation Pompe à Vide
+    Aspiration --> Remontee_Z : Délai de préhension
+    Remontee_Z --> Rotation_Piece : Orientation (Servomoteur 2)
+    Rotation_Piece --> Deplacement_Cible : Mouvement X/Y vers le puzzle
+    Deplacement_Cible --> Relachement : Activation Électrovanne (Casse-vide)
+    Relachement --> Remontee_Initiale : Pièce posée
+    Remontee_Initiale --> Attente_Commande
+```
+
+### Gestion des Sécurités Logicielles (Homing)
+
+Avant de pouvoir placer une pièce, une routine d'initialisation (Homing) s'exécute :
+1.  *Recherche du Zéro :* L'Arduino fait reculer les moteurs très lentement.
+2.  *Détection :* L'écrasement des capteurs de fin de course stoppe les moteurs.
+3.  *Calibrage :* Cette position physique devient le point de coordonnées (0,0) de référence pour tous les futurs déplacements.
+
+### Prototypage et Défis de Programmation
+
+* *Génération des pas :* La génération des signaux Step et Dir a été gérée de façon optimisée pour garantir la fluidité sans alourdir le processeur de l'Arduino.
+* *Gestion des Servomoteurs :* L'utilisation de la bibliothèque Servo.h a facilité la conversion des angles issus de la vision en signaux PWM.
+* *Synchronisation Pneumatique :* L'arrêt de la pompe ne suffisant pas à relâcher la pièce à cause de l'air résiduel, le programme ouvre l'électrovanne juste après l'arrêt de la pompe afin de "casser le vide" instantanément.
