@@ -71,11 +71,13 @@ Les choix techniques concernant la conception de notre machine ont été réalis
 ## Structure mécanique
 
 Le châssis principal est constitué de profilés en aluminium, offrant à la fois rigidité. De nouveaux pieds supports ont été conçus afin de surélever le plateau de travail. Cette modification permet le passage des éléments de transmission et facilite le déplacement des différents axes de la machine.
+
 ![PLATEAU SUPPORT](https://i.postimg.cc/3RSTy2yG/Whats-App-Image-2026-06-13-at-19-49-20.jpg)
 
 ## Système de déplacement
 
 Le déplacement suivant l'axe X est assuré par un moteur pas à pas. Le système est composé de deux rails latéraux reliés entre eux par un profilé aluminium et une barre métallique. Cette barre est directement couplée à l'arbre moteur à l'aide de deux coupleurs d'arbre, garantissant une transmission synchronisée du mouvement sur l'ensemble de l'axe.
+
 ![PLATEAU SUPPORT](https://i.postimg.cc/V66NHfnX/Capture-d-ecran-2026-06-13-200141.png)
 
 ## Tête de préhension
@@ -86,7 +88,8 @@ La tête de préhension a été conçue pour assurer la manipulation et le posit
 - Un support pour la pompe à vide et l'électrovanne assurant la préhension des pièces.
 - Un moteur pas à pas permettant le déplacement de la tête suivant l'axe Y.
 
-  ![PLATEAU SUPPORT](https://i.postimg.cc/NMH0wNCz/Capture-d-ecran-2026-06-13-200542.png)
+![PLATEAU SUPPORT](https://i.postimg.cc/NMH0wNCz/Capture-d-ecran-2026-06-13-200542.png)
+
 Cette conception permet de saisir, déplacer et positionner les pièces avec précision sur la zone d'assemblage.
 
 ## Boîtier électronique
@@ -99,5 +102,7 @@ Un boîtier électronique a été conçu pour regrouper et protéger l'ensemble 
 - Un support dédié au profilé de maintien de la caméra ainsi qu'à son système de fixation.
   
  ![PLATEAU SUPPORT](https://i.postimg.cc/4dmW4cph/Capture-d-ecran-2026-06-13-200942.png)
+ 
  ![PLATEAU SUPPORT](https://i.postimg.cc/Z5bFK3S0/Capture-d-ecran-2026-06-13-201106.png)
+ 
 Cette organisation facilite le câblage, la maintenance et la sécurité de l'ensemble du système.
