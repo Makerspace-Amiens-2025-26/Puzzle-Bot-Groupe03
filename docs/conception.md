@@ -22,8 +22,10 @@ Toute la puissance mécanique du robot dépend de la batterie 12,7 V. L'objectif
   * En sortie du bouton, le fil Rouge (+) se divise en deux : un câble part vers le bornier d'alimentation du CNC Shield, et l'autre part vers le bornier d'alimentation de notre carte sur mesure (PCB).
 * **La Masse :** Le fil Noir (-) de la batterie est directement relié aux borniers "GND" du CNC Shield et de la carte sur mesure.
 * **L'Arduino :** Il est alimenté séparément avec son câble USB classique branché à l'ordinateur (qui fournit le 5 V de sécurité).
-```mermaid
-graph LR
+  
+```html
+<div class="mermaid">
+graph TD
     subgraph Énergie Puissance
         B[Batterie 12.7V]
     end
@@ -42,7 +44,8 @@ graph LR
     AU -- "Fil Rouge (+)" --> PCB
     B -- "Fil Noir (-)" --> CNC
     B -- "Fil Noir (-)" --> PCB
-```
+</div>
+
 ### 2. Le Cerveau : Arduino et CNC Shield
 Le branchement principal est le plus simple : la carte d'extension **CNC Shield v3** vient simplement s'emboîter directement sur le dessus de la carte **Arduino Uno**. Il faut juste vérifier que toutes les petites broches en métal rentrent bien dans les trous noirs de l'Arduino sans se tordre.
 
@@ -148,7 +151,10 @@ graph LR
     
     Y -- "Fil Signal" --> CY
     GY -- "Fil Masse" --> CY
-```
+``` 
 # II.Conception mecanique 
 
 # III. programmation  
+
+<script src="[https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js](https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js)"></script>
+<script>mermaid.initialize({startOnLoad:true});</script>
