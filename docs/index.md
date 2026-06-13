@@ -14,16 +14,6 @@ Bienvenue dans la documentation du projet PUZZLE BOT. Ce site a pour but de four
 
 <iframe height="600" width="100%" src="https://sketchfab.com/3d-models/puzzle-bot-8e1213d5d09d41fabed07b3077e8b436" frameborder="0"></iframe>
 
-<script type="module"
-src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js">
-</script>
-
-<model-viewer
-src="PuzzleBot.glb"
-camera-controls
-auto-rotate
-style="width:100%;height:600px;">
-</model-viewer>
 
 
 ## À propos du Projet
