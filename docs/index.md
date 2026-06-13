@@ -17,8 +17,10 @@ Bienvenue dans la documentation du projet PUZZLE BOT. Ce site a pour but de four
 
 ## À propos du Projet
 
-Le projet Puzzle Bot a pour objectif de concevoir et de réaliser une machine automatisée capable de résoudre un puzzle de manière autonome. Destiné à un cadre pédagogique et technique, il permet de mettre en pratique des compétences en conception mécanique, électronique, programmation et vision par ordinateur. La machine doit être capable de détecter les pièces d’un puzzle, d’identifier leur position et leur orientation, puis de les manipuler avec précision afin de reconstituer l’image complète. Ce projet répond au défi d’automatiser une tâche complexe qui nécessite habituellement une importante analyse visuelle et une grande précision de manipulation, tout en offrant une expérience concrète de développement d’un système robotisé complet.
-
+Le Puzzle-Bot est un système robotique automatisé conçu pour identifier, trier et assembler les pièces d'un puzzle de manière autonome. Ce projet intègre trois domaines de l'ingénierie :
+* **Informatique & Vision :** Détection des pièces et calcul des trajectoires via vision par ordinateur.
+* **Électronique & Embarqué :** Interfaçage de puissance, commande de moteurs pas à pas et gestion d'actionneurs pneumatiques via microcontrôleur.
+* **Mécanique :** Cinématique cartésienne pour le positionnement spatial et préhension par le vide.
 
 ## Poster
 
@@ -28,14 +30,7 @@ Voici le poster de notre projet Puzzle Bot, une machine conçue pour résoudre a
 
 ## Vidéo
 
-Ici vous publierez la vidéo de votre projet. 
-- 1min30 au format vertical
-- Présentation du projet 
-- Des explication du fonctionnement du projet
-- Des vues du projet / Prototype / Application etc... 
-- Des plans du fonctionnement (même basique ou des éléments séparés)
-- Une conclusion
-- Si en stockage local : <50mo
+
 
 <video src="images/intro_amiens.mp4" controls title="Title"  style="width: 100%;"></video>
 
