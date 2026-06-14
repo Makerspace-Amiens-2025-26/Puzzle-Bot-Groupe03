@@ -28,8 +28,8 @@ Puzzle Bot est une machine automatisée capable de détecter, saisir et assemble
 * Mbognie Donna
 * Fokem bracins
 * Antoni calvin
-* Andy
-* Elsi 
+* Andy Metogo
+* Elsy Kounda
 ## Ressources
 * Documentation du projet
 * Modèle Onshape
