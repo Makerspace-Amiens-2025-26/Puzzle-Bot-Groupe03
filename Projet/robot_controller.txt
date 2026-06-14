@@ -1,0 +1,996 @@
+"""
+robot_controller.py
+====================
+Interface Python/Tkinter pour robot pick & place puzzle
+- Communication série RÉELLE avec l'Arduino (robot_arduino_serial.ino)
+- Vision OpenCV : détection de pièces de puzzle par forme + couleur
+- Clic sur caméra → déplacement robot
+- Résolution assistée de puzzle
+"""
+
+import tkinter as tk
+from tkinter import ttk, messagebox
+import threading, time, queue, math, re
+
+# ── Imports conditionnels ─────────────────────────────────────────────────────
+try:
+    import cv2
+    import numpy as np
+    CV2_OK = True
+except ImportError:
+    CV2_OK = False
+    print("ATTENTION : pip install opencv-python numpy")
+
+try:
+    import serial
+    import serial.tools.list_ports
+    SERIAL_OK = True
+except ImportError:
+    SERIAL_OK = False
+    print("ATTENTION : pip install pyserial")
+
+try:
+    from PIL import Image, ImageTk, ImageDraw, ImageFont
+    PIL_OK = True
+except ImportError:
+    PIL_OK = False
+    print("ATTENTION : pip install pillow")
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  CONSTANTES
+# ══════════════════════════════════════════════════════════════════════════════
+PAS_PAR_MM   = 80.0
+PLATEAU_W_MM = 200.0   # à ajuster selon ton plateau
+PLATEAU_H_MM = 150.0
+CAM_W, CAM_H = 640, 480
+
+C = {   # Palette UI
+    "bg":      "#0D0F18", "panel":  "#131620", "border": "#252A42",
+    "accent":  "#4F6EF7", "teal":   "#2DD4BF", "danger": "#F75F5F",
+    "ok":      "#34D399", "warn":   "#FBBF24", "text":   "#E2E8F0",
+    "sub":     "#64748B", "btn":    "#1E2236", "bhov":   "#2D3354",
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  COMMUNICATION SÉRIE
+# ══════════════════════════════════════════════════════════════════════════════
+class SerialBridge:
+    """
+    Envoie des commandes texte à l'Arduino et lit les réponses.
+    Les commandes sont mises en file et exécutées dans un thread dédié
+    pour ne jamais bloquer l'UI.
+    """
+    def __init__(self, log_cb):
+        self.port   = None
+        self.log    = log_cb
+        self._q     = queue.Queue()       # file de commandes
+        self._resp  = queue.Queue()       # réponses Arduino
+        self._lock  = threading.Lock()
+        self._thread = None
+        self.connected = False
+        self.last_pos  = (0, 0)           # (steps_x, steps_y)
+
+    # ── Connexion ─────────────────────────────────────────────────────────────
+    def connect(self, port, baud=9600):
+        if not SERIAL_OK:
+            self.log("❌ pyserial manquant — pip install pyserial")
+            return False
+        try:
+            self.port = serial.Serial(port, baud, timeout=0.1)
+            time.sleep(2.5)   # attendre reset Arduino
+            self.connected = True
+            self.log(f"✅ Connecté {port} @ {baud}")
+            self._thread = threading.Thread(target=self._run, daemon=True)
+            self._thread.start()
+            # Lire le "ROBOT_READY"
+            threading.Thread(target=self._drain_boot, daemon=True).start()
+            return True
+        except Exception as e:
+            self.log(f"❌ {e}")
+            return False
+
+    def disconnect(self):
+        self.connected = False
+        if self.port and self.port.is_open:
+            self.port.close()
+        self.log("🔌 Déconnecté")
+
+    def _drain_boot(self):
+        """Lit les messages de démarrage Arduino."""
+        time.sleep(0.5)
+        deadline = time.time() + 4
+        while time.time() < deadline and self.port and self.port.is_open:
+            try:
+                line = self.port.readline().decode("utf-8", errors="ignore").strip()
+                if line:
+                    self.log(f"Arduino: {line}")
+                    self._resp.put(line)
+            except:
+                pass
+
+    # ── Thread d'envoi ────────────────────────────────────────────────────────
+    def _run(self):
+        while self.connected:
+            try:
+                cmd, callback = self._q.get(timeout=0.1)
+                self._send_blocking(cmd, callback)
+            except queue.Empty:
+                # Lire quand même ce qu'Arduino envoie spontanément
+                self._read_available()
+
+    def _send_blocking(self, cmd, callback):
+        if not self.port or not self.port.is_open:
+            self.log("⚠ Port non ouvert")
+            return
+        try:
+            self.log(f"→ {cmd}")
+            self.port.write((cmd + "\n").encode())
+            self.port.flush()
+            # Lire jusqu'à "OK" ou timeout 30s
+            deadline = time.time() + 30
+            while time.time() < deadline:
+                line = self.port.readline().decode("utf-8", errors="ignore").strip()
+                if line:
+                    self.log(f"  ← {line}")
+                    self._resp.put(line)
+                    # Mettre à jour la position
+                    if line.startswith("POS "):
+                        parts = line.split()
+                        if len(parts) == 3:
+                            try:
+                                self.last_pos = (int(parts[1]), int(parts[2]))
+                            except:
+                                pass
+                    if line == "OK":
+                        if callback:
+                            callback()
+                        return
+                    if line.startswith("ERR"):
+                        self.log(f"⚠ Erreur Arduino : {line}")
+                        return
+        except Exception as e:
+            self.log(f"❌ Erreur série : {e}")
+
+    def _read_available(self):
+        if self.port and self.port.is_open:
+            try:
+                while self.port.in_waiting:
+                    line = self.port.readline().decode("utf-8", errors="ignore").strip()
+                    if line:
+                        self.log(f"  ← {line}")
+            except:
+                pass
+
+    # ── API publique ──────────────────────────────────────────────────────────
+    def send(self, cmd: str, callback=None, priority=False):
+        """Enfile une commande. callback() appelé quand OK reçu."""
+        if priority:
+            # Vider la file pour les urgences (stop)
+            while not self._q.empty():
+                try: self._q.get_nowait()
+                except: pass
+        self._q.put((cmd, callback))
+
+    def send_now(self, cmd: str):
+        """Envoi direct SANS file (pour boutons d'urgence)."""
+        if not self.connected:
+            self.log(f"[SIM] {cmd}")
+            return
+        try:
+            self.log(f"→ (direct) {cmd}")
+            self.port.write((cmd + "\n").encode())
+            self.port.flush()
+        except Exception as e:
+            self.log(f"❌ {e}")
+
+    def pos_mm(self):
+        sx, sy = self.last_pos
+        return sx / PAS_PAR_MM, sy / PAS_PAR_MM
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  VISION
+# ══════════════════════════════════════════════════════════════════════════════
+class VisionSystem:
+    """
+    Capture caméra + détection de pièces de puzzle.
+    Stratégie de détection :
+      1. Flou gaussien
+      2. Conversion HSV  → masques couleur
+      3. Contours → filtrage aire + convexité
+      4. Centroïde + bbox + couleur dominante
+    """
+    def __init__(self, log_cb):
+        self.log     = log_cb
+        self.cap     = None
+        self.running = False
+        self._frame  = None
+        self._lock   = threading.Lock()
+        self.objects = []          # liste détectée
+        self.click_cb = None       # callback clic caméra
+        # Calibration pixels → mm
+        self.cam_roi = (0, 0, CAM_W, CAM_H)  # (x0, y0, x1, y1) ROI plateau
+        self.plat_w  = PLATEAU_W_MM
+        self.plat_h  = PLATEAU_H_MM
+        # Paramètres détection (modifiables depuis UI)
+        self.min_area   = 800
+        self.blur_k     = 5
+        self.dilate_k   = 3
+        self.mode       = "couleur"   # "couleur" | "forme" | "mixte"
+        # Seuils HSV par couleur
+        self.color_ranges = {
+            "rouge":  [([0,  80, 60], [12, 255,255]),
+                       ([165,80, 60], [180,255,255])],   # double plage rouge
+            "vert":   [([35, 50, 40], [90, 255,255])],
+            "bleu":   [([95, 60, 40], [135,255,255])],
+            "jaune":  [([18, 80, 80], [38, 255,255])],
+            "orange": [([8,  80, 80], [18, 255,255])],
+            "violet": [([125,40,40],  [165,255,255])],
+            "blanc":  [([0,  0, 180], [180,40, 255])],
+        }
+        self.color_bgr = {
+            "rouge":(0,0,220),"vert":(0,180,0),"bleu":(200,80,0),
+            "jaune":(0,200,220),"orange":(0,130,220),
+            "violet":(180,0,180),"blanc":(200,200,200),
+        }
+
+    # ── Ouverture caméra ──────────────────────────────────────────────────────
+    def open(self, idx=0):
+        if not CV2_OK:
+            self.log("❌ OpenCV manquant — pip install opencv-python")
+            return False
+        self.cap = cv2.VideoCapture(idx)
+        if not self.cap.isOpened():
+            self.log(f"❌ Caméra {idx} introuvable")
+            return False
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,  CAM_W)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAM_H)
+        self.running = True
+        threading.Thread(target=self._loop, daemon=True).start()
+        self.log(f"📷 Caméra {idx} ouverte ({CAM_W}×{CAM_H})")
+        return True
+
+    def close(self):
+        self.running = False
+        time.sleep(0.1)
+        if self.cap:
+            self.cap.release()
+        self.log("📷 Caméra fermée")
+
+    def _loop(self):
+        while self.running:
+            ret, frame = self.cap.read()
+            if ret:
+                frame = cv2.resize(frame, (CAM_W, CAM_H))
+                with self._lock:
+                    self._frame = frame
+            time.sleep(0.030)
+
+    # ── Détection ─────────────────────────────────────────────────────────────
+    def get_annotated_rgb(self):
+        """
+        Retourne (image RGB annotée, liste d'objets détectés).
+        Appelé depuis l'UI toutes les ~40ms.
+        """
+        if not CV2_OK:
+            return None, []
+        with self._lock:
+            if self._frame is None:
+                return None, []
+            frame = self._frame.copy()
+
+        # ── Pré-traitement ────────────────────────────────────────────────────
+        blurred = cv2.GaussianBlur(frame, (self.blur_k*2+1, self.blur_k*2+1), 0)
+        hsv     = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+        kernel  = np.ones((self.dilate_k*2+1, self.dilate_k*2+1), np.uint8)
+
+        detected = []
+
+        for color_name, ranges in self.color_ranges.items():
+            # Fusion des masques (ex : double plage rouge)
+            mask = np.zeros(hsv.shape[:2], dtype=np.uint8)
+            for (lo, hi) in ranges:
+                lo_a = np.array(lo, np.uint8)
+                hi_a = np.array(hi, np.uint8)
+                mask = cv2.bitwise_or(mask, cv2.inRange(hsv, lo_a, hi_a))
+
+            # Nettoyage morphologique
+            mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN,  kernel)
+            mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+            mask = cv2.dilate(mask, kernel, iterations=1)
+
+            cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL,
+                                       cv2.CHAIN_APPROX_SIMPLE)
+            for cnt in cnts:
+                area = cv2.contourArea(cnt)
+                if area < self.min_area:
+                    continue
+                M = cv2.moments(cnt)
+                if M["m00"] == 0:
+                    continue
+                cx = int(M["m10"] / M["m00"])
+                cy = int(M["m01"] / M["m00"])
+                x, y, w, h = cv2.boundingRect(cnt)
+
+                # Forme : approximation polygonale
+                peri  = cv2.arcLength(cnt, True)
+                approx = cv2.approxPolyDP(cnt, 0.03 * peri, True)
+                sides  = len(approx)
+                hull_area = cv2.contourArea(cv2.convexHull(cnt))
+                solidity  = area / hull_area if hull_area > 0 else 0
+
+                # Conversion pixels → mm
+                x_mm, y_mm = self._px_to_mm(cx, cy)
+
+                obj = {
+                    "couleur": color_name,
+                    "cx": cx, "cy": cy,
+                    "x_mm": x_mm, "y_mm": y_mm,
+                    "area": area,
+                    "sides": sides,
+                    "solidity": solidity,
+                    "bbox": (x, y, w, h),
+                    "contour": cnt,
+                }
+                detected.append(obj)
+
+                # ── Dessin annotations ────────────────────────────────────────
+                bgr = self.color_bgr.get(color_name, (255,255,255))
+                cv2.drawContours(frame, [cnt], -1, bgr, 2)
+                cv2.rectangle(frame, (x,y), (x+w, y+h), bgr, 1)
+                cv2.circle(frame, (cx, cy), 5, bgr, -1)
+                label = f"{color_name} {x_mm:.0f},{y_mm:.0f}mm"
+                # Fond sous le texte pour lisibilité
+                (tw, th), _ = cv2.getTextSize(label,
+                              cv2.FONT_HERSHEY_SIMPLEX, 0.42, 1)
+                cv2.rectangle(frame, (x, y-th-6), (x+tw+4, y), (0,0,0), -1)
+                cv2.putText(frame, label, (x+2, y-4),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.42, bgr, 1)
+
+        # ── Grille de référence ROI ───────────────────────────────────────────
+        x0,y0,x1,y1 = self.cam_roi
+        cv2.rectangle(frame, (x0,y0), (x1,y1), (80,80,80), 1)
+
+        # ── Réticule croisé centre ────────────────────────────────────────────
+        mid_x, mid_y = CAM_W//2, CAM_H//2
+        cv2.line(frame,(mid_x-12,mid_y),(mid_x+12,mid_y),(100,200,100),1)
+        cv2.line(frame,(mid_x,mid_y-12),(mid_x,mid_y+12),(100,200,100),1)
+
+        self.objects = detected
+        return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), detected
+
+    # ── Calibration ───────────────────────────────────────────────────────────
+    def _px_to_mm(self, px, py):
+        x0, y0, x1, y1 = self.cam_roi
+        w = max(x1-x0, 1); h = max(y1-y0, 1)
+        rx = (px - x0) / w
+        ry = (py - y0) / h
+        return rx * self.plat_w, ry * self.plat_h
+
+    def px_to_mm(self, px, py):
+        return self._px_to_mm(px, py)
+
+    # ── Snapshot pour debug ───────────────────────────────────────────────────
+    def save_snapshot(self, path="snapshot.png"):
+        with self._lock:
+            if self._frame is not None:
+                cv2.imwrite(path, self._frame)
+                self.log(f"📸 Snapshot → {path}")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  INTERFACE PRINCIPALE
+# ══════════════════════════════════════════════════════════════════════════════
+class App(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("🤖 Robot Puzzle — Contrôle + Vision")
+        self.configure(bg=C["bg"])
+        self.minsize(1200, 720)
+
+        self._log_q  = queue.Queue()
+        self.bridge  = SerialBridge(self._log)
+        self.vision  = VisionSystem(self._log)
+
+        self._click_mode = tk.StringVar(value="deplace")  # deplace|src|dst
+        self._cam_img    = None    # keep PhotoImage reference
+        self._selected_obj = None
+        self._src_mm     = None
+        self._dst_mm     = None
+
+        self._build()
+        self._poll_log()
+        self._poll_cam()
+        self._poll_objs()
+        self.protocol("WM_DELETE_WINDOW", self._quit)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    #  CONSTRUCTION UI
+    # ══════════════════════════════════════════════════════════════════════════
+    def _build(self):
+        self.columnconfigure(1, weight=1)
+        self.rowconfigure(0, weight=1)
+
+        # ── Gauche : contrôles ──────────────────────────────────────────────
+        left = tk.Frame(self, bg=C["panel"], width=310)
+        left.grid(row=0, column=0, sticky="nsew", padx=(6,3), pady=6)
+        left.pack_propagate(False)
+
+        tk.Frame(left, bg=C["accent"], height=4).pack(fill="x")
+        tk.Label(left, text="⚙  ROBOT CONTROLLER", bg=C["panel"],
+                 fg=C["text"], font=("Helvetica",12,"bold"), pady=8).pack()
+
+        self._ui_connexion(left)
+        self._ui_homing(left)
+        self._ui_jog(left)
+        self._ui_servos(left)
+        self._ui_pompe(left)
+        self._ui_pick_place(left)
+        self._ui_puzzle(left)
+
+        # ── Centre : caméra + tableau ──────────────────────────────────────
+        mid = tk.Frame(self, bg=C["bg"])
+        mid.grid(row=0, column=1, sticky="nsew", padx=3, pady=6)
+        mid.rowconfigure(0, weight=3)
+        mid.rowconfigure(1, weight=1)
+        mid.columnconfigure(0, weight=1)
+
+        # Canvas caméra (Canvas au lieu de Label pour clic précis)
+        cam_wrap = tk.Frame(mid, bg=C["panel"],
+                            highlightthickness=1, highlightbackground=C["border"])
+        cam_wrap.grid(row=0, column=0, sticky="nsew", pady=(0,3))
+        cam_wrap.rowconfigure(1, weight=1)
+        cam_wrap.columnconfigure(0, weight=1)
+
+        # Barre mode clic
+        mode_bar = tk.Frame(cam_wrap, bg=C["panel"])
+        mode_bar.grid(row=0, column=0, sticky="ew", padx=4, pady=2)
+        tk.Label(mode_bar, text="Clic caméra →", bg=C["panel"],
+                 fg=C["sub"], font=("Helvetica",8)).pack(side="left")
+        for val, lbl in [("deplace","📍 Déplacer"),
+                          ("src",    "🅰 Source PP"),
+                          ("dst",    "🅱 Dest PP")]:
+            tk.Radiobutton(mode_bar, text=lbl, variable=self._click_mode,
+                           value=val, bg=C["panel"], fg=C["text"],
+                           selectcolor=C["btn"], activebackground=C["panel"],
+                           font=("Helvetica",8)).pack(side="left", padx=4)
+        self._btn(mode_bar, "📸 Snapshot",
+                  lambda: self.vision.save_snapshot(), C["btn"]).pack(side="right")
+
+        self.cam_canvas = tk.Canvas(cam_wrap, bg="#000",
+                                    highlightthickness=0, cursor="crosshair")
+        self.cam_canvas.grid(row=1, column=0, sticky="nsew")
+        self.cam_canvas.bind("<Button-1>", self._on_cam_click)
+        self.cam_canvas.bind("<Motion>",   self._on_cam_hover)
+
+        # Info survol
+        self.hover_var = tk.StringVar(value="Survolez la caméra…")
+        tk.Label(cam_wrap, textvariable=self.hover_var, bg=C["panel"],
+                 fg=C["sub"], font=("Helvetica",7)).grid(row=2, column=0)
+
+        # Tableau objets
+        obj_wrap = tk.Frame(mid, bg=C["panel"],
+                            highlightthickness=1, highlightbackground=C["border"])
+        obj_wrap.grid(row=1, column=0, sticky="nsew")
+        obj_wrap.columnconfigure(0, weight=1)
+        obj_wrap.rowconfigure(1, weight=1)
+
+        tk.Label(obj_wrap, text="OBJETS DÉTECTÉS — double-clic pour sélectionner",
+                 bg=C["panel"], fg=C["teal"],
+                 font=("Helvetica",8,"bold"), pady=3).grid(row=0, column=0, sticky="w", padx=8)
+
+        cols = ("Couleur","X mm","Y mm","Aire","Côtés","Solidité")
+        style = ttk.Style(self)
+        style.theme_use("clam")
+        style.configure("Treeview", background=C["panel"], foreground=C["text"],
+                        fieldbackground=C["panel"], rowheight=20,
+                        font=("Helvetica",8))
+        style.configure("Treeview.Heading", background=C["btn"],
+                        foreground=C["sub"], font=("Helvetica",7,"bold"))
+        style.map("Treeview", background=[("selected", C["accent"])])
+
+        self.tree = ttk.Treeview(obj_wrap, columns=cols,
+                                  show="headings", height=5)
+        cw = [70,55,55,60,50,65]
+        for col, w in zip(cols, cw):
+            self.tree.heading(col, text=col)
+            self.tree.column(col, width=w, anchor="center")
+        self.tree.grid(row=1, column=0, sticky="nsew", padx=4, pady=4)
+        self.tree.bind("<Double-1>", self._on_obj_dbl)
+        sb = ttk.Scrollbar(obj_wrap, orient="v", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=sb.set)
+        sb.grid(row=1, column=1, sticky="ns", pady=4)
+
+        # ── Droite : log ──────────────────────────────────────────────────
+        right = tk.Frame(self, bg=C["panel"], width=270)
+        right.grid(row=0, column=2, sticky="nsew", padx=(3,6), pady=6)
+        right.pack_propagate(False)
+
+        tk.Label(right, text="JOURNAL SÉRIE", bg=C["panel"],
+                 fg=C["sub"], font=("Helvetica",8,"bold"), pady=5).pack()
+
+        self.log_box = tk.Text(right, bg=C["bg"], fg=C["text"],
+                               font=("Courier",8), state="disabled",
+                               relief="flat", wrap="word", bd=0)
+        self.log_box.pack(fill="both", expand=True, padx=5, pady=(0,5))
+        # Tags couleur dans le log
+        self.log_box.tag_config("arrow",   foreground="#4F6EF7")
+        self.log_box.tag_config("arduino", foreground="#2DD4BF")
+        self.log_box.tag_config("err",     foreground="#F75F5F")
+        self.log_box.tag_config("ok",      foreground="#34D399")
+
+        btn_clear = self._btn(right, "🗑 Vider", self._clear_log, C["btn"])
+        btn_clear.pack(fill="x", padx=5, pady=2)
+
+        # ── Barre de statut ──────────────────────────────────────────────
+        sb2 = tk.Frame(self, bg=C["border"], height=20)
+        sb2.grid(row=1, column=0, columnspan=3, sticky="ew")
+        self.status_var = tk.StringVar(value="Déconnecté")
+        tk.Label(sb2, textvariable=self.status_var, bg=C["border"],
+                 fg=C["sub"], font=("Helvetica",8)).pack(side="left", padx=10)
+        self.cam_status = tk.StringVar(value="Caméra : OFF")
+        tk.Label(sb2, textvariable=self.cam_status, bg=C["border"],
+                 fg=C["sub"], font=("Helvetica",8)).pack(side="right", padx=10)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    #  PANNEAUX GAUCHE
+    # ══════════════════════════════════════════════════════════════════════════
+    def _ui_connexion(self, p):
+        f = self._sec(p, "CONNEXION SÉRIE")
+        r1 = tk.Frame(f, bg=C["panel"]); r1.pack(fill="x", pady=2)
+        tk.Label(r1,text="Port",bg=C["panel"],fg=C["sub"],
+                 font=("Helvetica",8),width=5).pack(side="left")
+        self.port_var = tk.StringVar(value="COM3")
+        self.port_cb  = ttk.Combobox(r1, textvariable=self.port_var, width=11)
+        self.port_cb.pack(side="left", padx=3)
+        self.baud_var = tk.StringVar(value="9600")
+        ttk.Combobox(r1, textvariable=self.baud_var,
+                     values=["9600","115200"], width=8).pack(side="left")
+
+        r2 = tk.Frame(f, bg=C["panel"]); r2.pack(fill="x", pady=2)
+        self._btn(r2,"🔌 Connecter", self._connect, C["accent"]).pack(side="left",padx=2)
+        self._btn(r2,"✖ Couper",     self._disconnect, C["danger"]).pack(side="left",padx=2)
+        self._btn(r2,"↻",            self._refresh_ports, C["btn"]).pack(side="left")
+
+        r3 = tk.Frame(f, bg=C["panel"]); r3.pack(fill="x", pady=(5,2))
+        tk.Label(r3,text="Cam",bg=C["panel"],fg=C["sub"],
+                 font=("Helvetica",8),width=5).pack(side="left")
+        self.cam_idx = tk.StringVar(value="0")
+        ttk.Combobox(r3, textvariable=self.cam_idx,
+                     values=["0","1","2","3"], width=4).pack(side="left",padx=3)
+        self._btn(r3,"▶ Ouvrir", self._open_cam,  C["teal"]).pack(side="left",padx=2)
+        self._btn(r3,"■ Fermer", self._close_cam, C["btn"]).pack(side="left")
+        self._refresh_ports()
+
+    def _ui_homing(self, p):
+        f = self._sec(p, "HOMING")
+        self._btn(f,"🏠 Homing X + Y",
+                  lambda: self.bridge.send("HOME"),
+                  C["warn"]).pack(fill="x", pady=3)
+
+    def _ui_jog(self, p):
+        f = self._sec(p, "DÉPLACEMENT (mm)")
+        g = tk.Frame(f, bg=C["panel"]); g.pack(pady=3)
+        self._btn(g,"▲", lambda:self._jog(0,-self._step()),C["btn"]).grid(row=0,col=1,padx=2,pady=2)
+        self._btn(g,"◀", lambda:self._jog(-self._step(),0),C["btn"]).grid(row=1,col=0,padx=2,pady=2)
+        self._btn(g,"⌂", self._goto_zero,                  C["btn"]).grid(row=1,col=1,padx=2,pady=2)
+        self._btn(g,"▶", lambda:self._jog( self._step(),0),C["btn"]).grid(row=1,col=2,padx=2,pady=2)
+        self._btn(g,"▼", lambda:self._jog(0, self._step()),C["btn"]).grid(row=2,col=1,padx=2,pady=2)
+
+        sf = tk.Frame(f, bg=C["panel"]); sf.pack()
+        tk.Label(sf,text="Pas:",bg=C["panel"],fg=C["sub"],
+                 font=("Helvetica",8)).pack(side="left")
+        self.step_var = tk.StringVar(value="5")
+        ttk.Combobox(sf, textvariable=self.step_var,
+                     values=["1","5","10","25","50"], width=5).pack(side="left",padx=4)
+
+        cf = tk.Frame(f, bg=C["panel"]); cf.pack(fill="x", pady=3)
+        for lbl,attr,default in [("X:",None,"0"),("Y:",None,"0")]:
+            tk.Label(cf,text=lbl,bg=C["panel"],fg=C["sub"],
+                     font=("Helvetica",8)).pack(side="left")
+            e = tk.Entry(cf, width=6, bg=C["btn"], fg=C["text"],
+                         insertbackground=C["text"])
+            e.insert(0,default); e.pack(side="left",padx=2)
+            if lbl=="X:": self.jog_x=e
+            else:         self.jog_y=e
+        self._btn(cf,"Go", self._goto_xy, C["accent"]).pack(side="left",padx=2)
+
+    def _ui_servos(self, p):
+        f = self._sec(p, "SERVOMOTEURS")
+        for num,lbl in [(1,"Servo 1 (axe Z)"),(2,"Servo 2")]:
+            sf = tk.Frame(f, bg=C["panel"]); sf.pack(fill="x", pady=2)
+            tk.Label(sf,text=lbl,bg=C["panel"],fg=C["text"],
+                     font=("Helvetica",8),width=13,anchor="w").pack(side="left")
+            s = tk.Scale(sf,from_=0,to=180,orient="horizontal",
+                         bg=C["panel"],fg=C["text"],highlightthickness=0,
+                         troughcolor=C["btn"],length=110,
+                         command=lambda v,n=num: self._set_servo(n,int(v)))
+            s.set(90); s.pack(side="left")
+            if num==1: self.sl1=s
+            else:      self.sl2=s
+
+        rb = tk.Frame(f, bg=C["panel"]); rb.pack(fill="x", pady=2)
+        self._btn(rb,"⬇ Descendre (8°)",
+                  lambda: self.bridge.send("SERVO_D"), C["btn"]).pack(side="left",padx=2)
+        self._btn(rb,"⬆ Monter (90°)",
+                  lambda: self.bridge.send("SERVO_U"), C["btn"]).pack(side="left",padx=2)
+        self._btn(f,"↩ Repos (90°)",
+                  lambda: self.bridge.send("SERVO_R"), C["btn"]).pack(fill="x",pady=2)
+
+    def _ui_pompe(self, p):
+        f = self._sec(p, "POMPE / ÉLECTROVANNE")
+        r = tk.Frame(f, bg=C["panel"]); r.pack(fill="x", pady=4)
+        self._btn(r,"💧 Aspirer",
+                  lambda: self.bridge.send("POMPE_ON"),
+                  C["teal"]).pack(side="left",padx=3,expand=True,fill="x")
+        self._btn(r,"💨 Relâcher",
+                  lambda: self.bridge.send("POMPE_OFF"),
+                  C["danger"]).pack(side="left",padx=3,expand=True,fill="x")
+        self.pompe_lbl = tk.Label(f,text="⬤ Pompe OFF",bg=C["panel"],
+                                   fg=C["danger"],font=("Helvetica",9,"bold"))
+        self.pompe_lbl.pack()
+
+    def _ui_pick_place(self, p):
+        f = self._sec(p, "PICK & PLACE")
+
+        def coord_row(label, default_x, default_y):
+            r = tk.Frame(f, bg=C["panel"]); r.pack(fill="x", pady=1)
+            tk.Label(r,text=label,bg=C["panel"],fg=C["sub"],
+                     font=("Helvetica",8),width=7,anchor="w").pack(side="left")
+            ex = tk.Entry(r,width=6,bg=C["btn"],fg=C["text"],
+                          insertbackground=C["text"])
+            ex.insert(0,str(default_x)); ex.pack(side="left",padx=2)
+            ey = tk.Entry(r,width=6,bg=C["btn"],fg=C["text"],
+                          insertbackground=C["text"])
+            ey.insert(0,str(default_y)); ey.pack(side="left",padx=2)
+            tk.Label(r,text="mm",bg=C["panel"],fg=C["sub"],
+                     font=("Helvetica",7)).pack(side="left")
+            return ex, ey
+
+        tk.Label(f,text="         X        Y",bg=C["panel"],
+                 fg=C["sub"],font=("Helvetica",7)).pack(anchor="w",padx=2)
+        self.pp_src = coord_row("🅰 Source", 12.6, 9.6)
+        self.pp_dst = coord_row("🅱 Dest",   14.9, 9.6)
+
+        r2 = tk.Frame(f, bg=C["panel"]); r2.pack(fill="x", pady=3)
+        self._btn(r2,"🤖 Exécuter PP",    self._do_pp,    C["accent"]).pack(side="left",padx=2,expand=True,fill="x")
+        self._btn(r2,"📌 Obj → Source",   self._obj_to_src, C["btn"]).pack(side="left",padx=2,expand=True,fill="x")
+
+        # Indicateurs source/dest
+        self.src_lbl = tk.Label(f,text="Src : —",bg=C["panel"],
+                                 fg=C["sub"],font=("Helvetica",7))
+        self.src_lbl.pack(anchor="w",padx=4)
+        self.dst_lbl = tk.Label(f,text="Dst : —",bg=C["panel"],
+                                 fg=C["sub"],font=("Helvetica",7))
+        self.dst_lbl.pack(anchor="w",padx=4)
+
+    def _ui_puzzle(self, p):
+        f = self._sec(p, "PUZZLE — PARAMÈTRES VISION")
+
+        r1 = tk.Frame(f, bg=C["panel"]); r1.pack(fill="x", pady=2)
+        tk.Label(r1,text="Aire min",bg=C["panel"],fg=C["sub"],
+                 font=("Helvetica",8),width=9,anchor="w").pack(side="left")
+        self.min_area_var = tk.StringVar(value="800")
+        tk.Entry(r1,textvariable=self.min_area_var,width=7,
+                 bg=C["btn"],fg=C["text"],
+                 insertbackground=C["text"]).pack(side="left",padx=3)
+        self._btn(r1,"Appliquer",self._apply_vision_params,C["btn"]).pack(side="left")
+
+        r2 = tk.Frame(f, bg=C["panel"]); r2.pack(fill="x", pady=2)
+        tk.Label(r2,text="Flou k",bg=C["panel"],fg=C["sub"],
+                 font=("Helvetica",8),width=9,anchor="w").pack(side="left")
+        self.blur_var = tk.StringVar(value="5")
+        ttk.Combobox(r2,textvariable=self.blur_var,
+                     values=["1","3","5","7","9"],width=5).pack(side="left",padx=3)
+
+        r3 = tk.Frame(f, bg=C["panel"]); r3.pack(fill="x", pady=2)
+        tk.Label(r3,text="Dilate k",bg=C["panel"],fg=C["sub"],
+                 font=("Helvetica",8),width=9,anchor="w").pack(side="left")
+        self.dilate_var = tk.StringVar(value="3")
+        ttk.Combobox(r3,textvariable=self.dilate_var,
+                     values=["1","2","3","5"],width=5).pack(side="left",padx=3)
+
+        # Plateau mm
+        r4 = tk.Frame(f, bg=C["panel"]); r4.pack(fill="x", pady=2)
+        tk.Label(r4,text="Plateau W",bg=C["panel"],fg=C["sub"],
+                 font=("Helvetica",8),width=9,anchor="w").pack(side="left")
+        self.plat_w_var = tk.StringVar(value=str(PLATEAU_W_MM))
+        tk.Entry(r4,textvariable=self.plat_w_var,width=6,
+                 bg=C["btn"],fg=C["text"],
+                 insertbackground=C["text"]).pack(side="left",padx=2)
+        tk.Label(r4,text="mm",bg=C["panel"],fg=C["sub"],
+                 font=("Helvetica",7)).pack(side="left")
+
+        r5 = tk.Frame(f, bg=C["panel"]); r5.pack(fill="x", pady=2)
+        tk.Label(r5,text="Plateau H",bg=C["panel"],fg=C["sub"],
+                 font=("Helvetica",8),width=9,anchor="w").pack(side="left")
+        self.plat_h_var = tk.StringVar(value=str(PLATEAU_H_MM))
+        tk.Entry(r5,textvariable=self.plat_h_var,width=6,
+                 bg=C["btn"],fg=C["text"],
+                 insertbackground=C["text"]).pack(side="left",padx=2)
+        tk.Label(r5,text="mm",bg=C["panel"],fg=C["sub"],
+                 font=("Helvetica",7)).pack(side="left")
+
+        self._btn(f,"✅ Appliquer calibration",
+                  self._apply_vision_params, C["teal"]).pack(fill="x",pady=3)
+
+        # Bouton résolution automatique
+        self._btn(f,"🧩 Résoudre puzzle (auto)",
+                  self._solve_puzzle, C["accent"]).pack(fill="x",pady=2)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    #  ACTIONS CONNEXION
+    # ══════════════════════════════════════════════════════════════════════════
+    def _connect(self):
+        threading.Thread(
+            target=self.bridge.connect,
+            args=(self.port_var.get(), int(self.baud_var.get())),
+            daemon=True).start()
+
+    def _disconnect(self):
+        self.bridge.disconnect()
+
+    def _refresh_ports(self):
+        if SERIAL_OK:
+            ports = [p.device for p in serial.tools.list_ports.comports()]
+        else:
+            ports = ["COM3","COM4","/dev/ttyUSB0","/dev/ttyACM0"]
+        self.port_cb["values"] = ports
+        if ports: self.port_var.set(ports[0])
+
+    def _open_cam(self):
+        idx = int(self.cam_idx.get())
+        self.vision.open(idx)
+
+    def _close_cam(self):
+        self.vision.close()
+        self.cam_canvas.delete("all")
+        self.cam_status.set("Caméra : OFF")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    #  ACTIONS ROBOT
+    # ══════════════════════════════════════════════════════════════════════════
+    def _step(self):
+        try:   return float(self.step_var.get())
+        except: return 5.0
+
+    def _jog(self, dx, dy):
+        x_mm, y_mm = self.bridge.pos_mm()
+        nx = x_mm + dx; ny = y_mm + dy
+        self.bridge.send(f"GOTOMM {nx:.2f} {ny:.2f}")
+
+    def _goto_zero(self):
+        self.bridge.send("GOTOMM 0.00 0.00")
+
+    def _goto_xy(self):
+        try:
+            x = float(self.jog_x.get())
+            y = float(self.jog_y.get())
+            self.bridge.send(f"GOTOMM {x:.2f} {y:.2f}")
+        except ValueError:
+            messagebox.showerror("Erreur","Coordonnées invalides")
+
+    def _set_servo(self, num, angle):
+        self.bridge.send(f"SERVO {num} {angle}")
+
+    def _do_pp(self):
+        try:
+            sx=float(self.pp_src[0].get()); sy=float(self.pp_src[1].get())
+            dx=float(self.pp_dst[0].get()); dy=float(self.pp_dst[1].get())
+            self.bridge.send(f"PPMM {sx:.2f} {sy:.2f} {dx:.2f} {dy:.2f}")
+        except ValueError:
+            messagebox.showerror("Erreur","Coordonnées invalides")
+
+    def _obj_to_src(self):
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showinfo("Info","Sélectionnez d'abord un objet dans le tableau")
+            return
+        vals = self.tree.item(sel[0])["values"]
+        x,y = float(vals[1]), float(vals[2])
+        self.pp_src[0].delete(0,"end"); self.pp_src[0].insert(0,f"{x:.1f}")
+        self.pp_src[1].delete(0,"end"); self.pp_src[1].insert(0,f"{y:.1f}")
+        self.src_lbl.config(text=f"Src : {x:.1f},{y:.1f} mm")
+        self._log(f"📌 Source → {x:.1f},{y:.1f} mm")
+
+    # ── Clic sur caméra ───────────────────────────────────────────────────────
+    def _on_cam_click(self, event):
+        if not self.vision.running:
+            return
+        cw = self.cam_canvas.winfo_width()
+        ch = self.cam_canvas.winfo_height()
+        # Coordonnées relatives à l'image affichée
+        px = event.x * CAM_W  / max(cw, 1)
+        py = event.y * CAM_H  / max(ch, 1)
+        x_mm, y_mm = self.vision.px_to_mm(px, py)
+        mode = self._click_mode.get()
+
+        if mode == "deplace":
+            self.bridge.send(f"GOTOMM {x_mm:.2f} {y_mm:.2f}")
+            self._log(f"🖱 Clic → déplacement ({x_mm:.1f},{y_mm:.1f}) mm")
+        elif mode == "src":
+            self.pp_src[0].delete(0,"end"); self.pp_src[0].insert(0,f"{x_mm:.1f}")
+            self.pp_src[1].delete(0,"end"); self.pp_src[1].insert(0,f"{y_mm:.1f}")
+            self.src_lbl.config(text=f"Src : {x_mm:.1f},{y_mm:.1f} mm")
+            self._log(f"🖱 Clic → Source PP ({x_mm:.1f},{y_mm:.1f}) mm")
+        elif mode == "dst":
+            self.pp_dst[0].delete(0,"end"); self.pp_dst[0].insert(0,f"{x_mm:.1f}")
+            self.pp_dst[1].delete(0,"end"); self.pp_dst[1].insert(0,f"{y_mm:.1f}")
+            self.dst_lbl.config(text=f"Dst : {x_mm:.1f},{y_mm:.1f} mm")
+            self._log(f"🖱 Clic → Dest PP ({x_mm:.1f},{y_mm:.1f}) mm")
+
+    def _on_cam_hover(self, event):
+        if not self.vision.running:
+            return
+        cw = self.cam_canvas.winfo_width()
+        ch = self.cam_canvas.winfo_height()
+        px = event.x * CAM_W / max(cw, 1)
+        py = event.y * CAM_H / max(ch, 1)
+        x_mm, y_mm = self.vision.px_to_mm(px, py)
+        self.hover_var.set(f"px({px:.0f},{py:.0f})  →  {x_mm:.1f},{y_mm:.1f} mm")
+
+    # ── Résolution puzzle ─────────────────────────────────────────────────────
+    def _solve_puzzle(self):
+        """
+        Exemple de résolution : déplace chaque pièce détectée
+        vers une position cible calculée en grille.
+        Adapter selon la logique réelle du puzzle.
+        """
+        objs = list(self.vision.objects)
+        if not objs:
+            messagebox.showinfo("Puzzle","Aucun objet détecté !")
+            return
+
+        # Tri par couleur (ordre prédéfini du puzzle)
+        ordre_couleurs = ["rouge","vert","bleu","jaune","orange","violet","blanc"]
+        objs_tries = sorted(objs,
+                            key=lambda o: ordre_couleurs.index(o["couleur"])
+                            if o["couleur"] in ordre_couleurs else 99)
+
+        # Grille destination (à adapter)
+        cols_grid = 3
+        espacement_x = 40.0   # mm entre colonnes
+        espacement_y = 40.0   # mm entre lignes
+        origin_x     = 20.0
+        origin_y     = 20.0
+
+        def run():
+            for i, obj in enumerate(objs_tries):
+                col  = i % cols_grid
+                row  = i // cols_grid
+                dx   = origin_x + col * espacement_x
+                dy   = origin_y + row * espacement_y
+                sx, sy = obj["x_mm"], obj["y_mm"]
+                self._log(f"🧩 Pièce {i+1}/{len(objs_tries)} "
+                          f"{obj['couleur']} ({sx:.0f},{sy:.0f})→({dx:.0f},{dy:.0f})")
+                cmd = f"PPMM {sx:.2f} {sy:.2f} {dx:.2f} {dy:.2f}"
+                done = threading.Event()
+                self.bridge.send(cmd, callback=done.set)
+                done.wait(timeout=60)
+                time.sleep(0.3)
+            self._log("🏁 Résolution terminée")
+
+        threading.Thread(target=run, daemon=True).start()
+
+    # ── Paramètres vision ─────────────────────────────────────────────────────
+    def _apply_vision_params(self):
+        try:
+            self.vision.min_area  = int(self.min_area_var.get())
+            self.vision.blur_k    = int(self.blur_var.get())
+            self.vision.dilate_k  = int(self.dilate_var.get())
+            self.vision.plat_w    = float(self.plat_w_var.get())
+            self.vision.plat_h    = float(self.plat_h_var.get())
+            self._log("✅ Paramètres vision appliqués")
+        except ValueError:
+            messagebox.showerror("Erreur","Valeurs invalides")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    #  POLLING
+    # ══════════════════════════════════════════════════════════════════════════
+    def _poll_log(self):
+        while not self._log_q.empty():
+            msg = self._log_q.get_nowait()
+            self.log_box.config(state="normal")
+            ts = time.strftime("%H:%M:%S")
+            # Couleur selon contenu
+            tag = ("arduino" if "←" in msg
+                   else "arrow"  if "→" in msg
+                   else "err"    if ("❌" in msg or "ERR" in msg)
+                   else "ok"     if ("✅" in msg or "OK" in msg)
+                   else "")
+            self.log_box.insert("end", f"[{ts}] {msg}\n", tag)
+            self.log_box.see("end")
+            self.log_box.config(state="disabled")
+
+        # Statut barre
+        x,y = self.bridge.pos_mm()
+        conn = "✅ Connecté" if self.bridge.connected else "🔌 Déconnecté"
+        self.status_var.set(f"{conn}  |  X={x:.1f}mm  Y={y:.1f}mm")
+        self.after(80, self._poll_log)
+
+    def _poll_cam(self):
+        if self.vision.running and CV2_OK and PIL_OK:
+            rgb, _ = self.vision.get_annotated_rgb()
+            if rgb is not None:
+                cw = self.cam_canvas.winfo_width()
+                ch = self.cam_canvas.winfo_height()
+                if cw > 10 and ch > 10:
+                    img   = Image.fromarray(rgb).resize((cw, ch), Image.LANCZOS)
+                    photo = ImageTk.PhotoImage(img)
+                    self.cam_canvas.delete("all")
+                    self.cam_canvas.create_image(0, 0, anchor="nw", image=photo)
+                    self._cam_img = photo   # ← évite le garbage collector
+                n = len(self.vision.objects)
+                self.cam_status.set(f"Caméra : ON  |  {n} objet(s) détecté(s)")
+        self.after(40, self._poll_cam)
+
+    def _poll_objs(self):
+        for row in self.tree.get_children():
+            self.tree.delete(row)
+        for obj in self.vision.objects:
+            self.tree.insert("", "end", values=(
+                obj["couleur"],
+                f"{obj['x_mm']:.1f}",
+                f"{obj['y_mm']:.1f}",
+                f"{obj['area']:.0f}",
+                obj["sides"],
+                f"{obj['solidity']:.2f}",
+            ))
+        self.after(250, self._poll_objs)
+
+    def _on_obj_dbl(self, event):
+        sel = self.tree.selection()
+        if sel:
+            vals = self.tree.item(sel[0])["values"]
+            x,y = float(vals[1]), float(vals[2])
+            mode = self._click_mode.get()
+            if mode == "deplace":
+                self.bridge.send(f"GOTOMM {x:.2f} {y:.2f}")
+            elif mode == "src":
+                self.pp_src[0].delete(0,"end"); self.pp_src[0].insert(0,f"{x:.1f}")
+                self.pp_src[1].delete(0,"end"); self.pp_src[1].insert(0,f"{y:.1f}")
+                self.src_lbl.config(text=f"Src : {x:.1f},{y:.1f} mm")
+            elif mode == "dst":
+                self.pp_dst[0].delete(0,"end"); self.pp_dst[0].insert(0,f"{x:.1f}")
+                self.pp_dst[1].delete(0,"end"); self.pp_dst[1].insert(0,f"{y:.1f}")
+                self.dst_lbl.config(text=f"Dst : {x:.1f},{y:.1f} mm")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    #  UTILITAIRES
+    # ══════════════════════════════════════════════════════════════════════════
+    def _log(self, msg: str):
+        self._log_q.put(msg)
+
+    def _clear_log(self):
+        self.log_box.config(state="normal")
+        self.log_box.delete("1.0","end")
+        self.log_box.config(state="disabled")
+
+    def _sec(self, parent, title):
+        outer = tk.Frame(parent, bg=C["panel"], padx=7, pady=3)
+        outer.pack(fill="x", padx=5, pady=2)
+        tk.Label(outer, text=title, bg=C["panel"], fg=C["sub"],
+                 font=("Helvetica",7,"bold")).pack(anchor="w")
+        tk.Frame(outer, bg=C["border"], height=1).pack(fill="x", pady=(1,3))
+        return outer
+
+    def _btn(self, parent, text, cmd, bg):
+        b = tk.Button(parent, text=text, command=cmd,
+                      bg=bg, fg=C["text"], activebackground=C["bhov"],
+                      activeforeground=C["text"], relief="flat",
+                      font=("Helvetica",8), cursor="hand2",
+                      pady=3, padx=5)
+        b.bind("<Enter>", lambda e,b=b,bg=bg: b.config(bg=C["bhov"]))
+        b.bind("<Leave>", lambda e,b=b,bg=bg: b.config(bg=bg))
+        return b
+
+    def _quit(self):
+        self.vision.close()
+        self.bridge.disconnect()
+        self.destroy()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+if __name__ == "__main__":
+    app = App()
+    app.mainloop()

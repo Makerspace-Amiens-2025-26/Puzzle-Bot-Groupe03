@@ -1,0 +1,1000 @@
+"""
+╔══════════════════════════════════════════════════════════════╗
+║            CNC CONTROL PANEL — Interface Graphique v2        ║
+╠══════════════════════════════════════════════════════════════╣
+║  Dépendances :                                               ║
+║      pip install pyfirmata opencv-python pillow              ║
+║                                                              ║
+║  Lancement :                                                 ║
+║      python cnc_gui.py                                       ║
+╚══════════════════════════════════════════════════════════════╝
+"""
+
+import time
+import threading
+import tkinter as tk
+from tkinter import font as tkfont
+import cv2
+from PIL import Image, ImageTk
+
+try:
+    from pyfirmata import Arduino, util, SERVO, OUTPUT
+    FIRMATA_OK = True
+except ImportError:
+    FIRMATA_OK = False
+
+# ══════════════════════════════════════════════════════════════════════════
+# PALETTE & CONSTANTES VISUELLES
+# ══════════════════════════════════════════════════════════════════════════
+BG        = "#0D0F14"
+PANEL     = "#141720"
+BORDER    = "#252A38"
+CYAN      = "#00E5FF"
+ORANGE    = "#FF6B35"
+GREEN     = "#00E676"
+RED       = "#FF1744"
+YELLOW    = "#FFD740"
+TEXT      = "#C8D0E0"
+MUTED     = "#4A5270"
+FONT_MONO = "Courier New"
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# CONTRÔLEUR CNC
+# ══════════════════════════════════════════════════════════════════════════
+class CNCController:
+    """
+    Encapsule toute la logique pyfirmata.
+    Si pyfirmata est absent → mode simulation.
+    """
+
+    def __init__(self):
+        self.board       = None
+        self.connected   = False
+        self.simulation  = not FIRMATA_OK
+
+        self.PAS_X = self.DIR_X = None
+        self.PAS_Y = self.DIR_Y = None
+        self.ENABLE_PIN = None
+        self.PIN_POMPE  = self.PIN_VANNE = None
+        self.endstopX   = self.endstopY  = None
+        self.SERVO1_PIN = 11
+        self.SERVO2_PIN = 12
+
+        self.pos_x      = 0
+        self.pos_y      = 0
+        self.vitesse_ms = 2
+        self._stop_flag = False
+
+        # État fin de course (True = déclenché)
+        self.endstop_x_triggered = False
+        self.endstop_y_triggered = False
+
+    # ── Connexion ──────────────────────────────────────────────────────────
+    def connecter(self, port):
+        if self.simulation:
+            self.connected = True
+            return True, "Mode simulation (pyfirmata absent)"
+        try:
+            self.board = Arduino(port)
+            it = util.Iterator(self.board)
+            it.start()
+            time.sleep(1)
+
+            self.PAS_X      = self.board.get_pin('d:2:o')
+            self.DIR_X      = self.board.get_pin('d:5:o')
+            self.PAS_Y      = self.board.get_pin('d:3:o')
+            self.DIR_Y      = self.board.get_pin('d:6:o')
+            self.ENABLE_PIN = self.board.get_pin('d:8:o')
+            self.PIN_POMPE  = self.board.get_pin('a:3:o')
+            self.PIN_VANNE  = self.board.get_pin('a:4:o')
+            self.endstopX   = self.board.get_pin('d:9:i')
+            self.endstopY   = self.board.get_pin('d:10:i')
+
+            self.board.digital[self.SERVO1_PIN].mode = SERVO
+            self.board.digital[self.SERVO2_PIN].mode = SERVO
+            self.board.analog[3]._set_mode(OUTPUT)
+            self.board.analog[4]._set_mode(OUTPUT)
+
+            self.endstopX.enable_reporting()
+            self.endstopY.enable_reporting()
+
+            self.ENABLE_PIN.write(0)
+            self.board.digital[self.SERVO1_PIN].write(90)
+            self.board.digital[self.SERVO2_PIN].write(90)
+            self.PIN_POMPE.write(0)
+            self.PIN_VANNE.write(0)
+            time.sleep(0.5)
+
+            self.connected = True
+            return True, f"Arduino connecté sur {port}"
+        except Exception as e:
+            return False, str(e)
+
+    def deconnecter(self):
+        if self.board:
+            try:
+                self.ENABLE_PIN.write(1)
+                self.PIN_POMPE.write(0)
+                self.PIN_VANNE.write(0)
+                self.board.exit()
+            except Exception:
+                pass
+        self.connected = False
+
+    # ── Lecture fin de course ──────────────────────────────────────────────
+    def lire_endstops(self):
+        """
+        Retourne (état_X, état_Y) sous forme de booléens.
+        True = fin de course déclenché (niveau bas = 0 en NPN).
+        En simulation, retourne les valeurs simulées.
+        """
+        if self.simulation:
+            return self.endstop_x_triggered, self.endstop_y_triggered
+
+        vx = self.endstopX.read() if self.endstopX else None
+        vy = self.endstopY.read() if self.endstopY else None
+
+        # Capteur NPN : 0 = déclenché
+        ex = (vx == 0) if vx is not None else False
+        ey = (vy == 0) if vy is not None else False
+        self.endstop_x_triggered = ex
+        self.endstop_y_triggered = ey
+        return ex, ey
+
+    def simuler_endstop(self, axe, etat):
+        """Active/désactive un fin de course en mode simulation."""
+        if axe == "X":
+            self.endstop_x_triggered = etat
+        else:
+            self.endstop_y_triggered = etat
+
+    # ── Mouvement bas niveau ───────────────────────────────────────────────
+    def _pas(self, pin):
+        d = self.vitesse_ms / 1000.0
+        if not self.simulation and pin:
+            pin.write(1); time.sleep(d)
+            pin.write(0); time.sleep(d)
+        else:
+            time.sleep(d * 2)
+
+    def _endstop_declenche(self, axe):
+        """Vérifie si le fin de course de l'axe est actif."""
+        ex, ey = self.lire_endstops()
+        return ex if axe == "X" else ey
+
+    def aller_a(self, axe, cible, cb_prog=None):
+        """
+        Déplacement absolu vers `cible` (pas).
+        Stoppe si fin de course déclenché dans la direction de déplacement.
+        Appeler depuis un thread.
+        """
+        self._stop_flag = False
+        if axe == "X":
+            pin_pas, pin_dir = self.PAS_X, self.DIR_X
+            pos = self.pos_x
+        else:
+            pin_pas, pin_dir = self.PAS_Y, self.DIR_Y
+            pos = self.pos_y
+
+        dist = cible - pos
+        if dist == 0:
+            return
+
+        direction   = 1 if dist > 0 else 0
+        retour_zero = dist < 0
+        pas_total   = abs(dist)
+
+        if not self.simulation and pin_dir:
+            pin_dir.write(direction)
+
+        for i in range(pas_total):
+            if self._stop_flag:
+                break
+
+            # Vérification fin de course tous les 5 pas
+            if i % 5 == 0:
+                if retour_zero and self._endstop_declenche(axe):
+                    # Fin de course côté origine atteint
+                    if axe == "X": self.pos_x = 0
+                    else:          self.pos_y = 0
+                    return
+
+                # Fin de course côté max (protège aussi dans la direction positive)
+                # Ici on suppose un seul endstop côté origine ;
+                # adapter si vous avez un endstop côté max.
+
+            self._pas(pin_pas)
+
+            delta = 1 if direction == 1 else -1
+            if axe == "X": self.pos_x += delta
+            else:          self.pos_y += delta
+
+            if cb_prog and i % 50 == 0:
+                cb_prog(i, pas_total)
+
+    def homing(self, axe):
+        """Homing complet (appeler depuis un thread)."""
+        self.aller_a(axe, -100000)   # avance vers le capteur
+        self.aller_a(axe, 150)        # dégagement
+        if axe == "X": self.pos_x = 0
+        else:          self.pos_y = 0
+
+    def stop_urgence(self):
+        self._stop_flag = True
+        if not self.simulation and self.ENABLE_PIN:
+            self.ENABLE_PIN.write(1)
+        if not self.simulation and self.PIN_POMPE:
+            self.PIN_POMPE.write(0)
+            self.PIN_VANNE.write(0)
+
+    # ── Actionneurs ────────────────────────────────────────────────────────
+    def set_servo(self, num, angle):
+        pin = self.SERVO1_PIN if num == 1 else self.SERVO2_PIN
+        if not self.simulation and self.board:
+            self.board.digital[pin].write(max(0, min(180, angle)))
+
+    def pompe_on(self):
+        if not self.simulation and self.PIN_POMPE:
+            self.PIN_POMPE.write(0)
+            self.PIN_VANNE.write(1)
+
+    def pompe_off(self):
+        if not self.simulation and self.PIN_POMPE:
+            self.PIN_POMPE.write(1)
+            self.PIN_VANNE.write(0)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# WIDGETS PERSONNALISÉS
+# ══════════════════════════════════════════════════════════════════════════
+class FlatButton(tk.Label):
+    def __init__(self, parent, text, command, color=CYAN, width=12, **kw):
+        super().__init__(
+            parent, text=text,
+            bg=PANEL, fg=color,
+            font=(FONT_MONO, 9, "bold"),
+            width=width, cursor="hand2",
+            relief="flat", bd=0, padx=8, pady=5,
+            highlightthickness=1, highlightbackground=color,
+            **kw
+        )
+        self._cmd   = command
+        self._color = color
+        self.bind("<Button-1>", lambda e: command())
+        self.bind("<Enter>",    lambda e: self.config(bg=color, fg=BG))
+        self.bind("<Leave>",    lambda e: self.config(bg=PANEL, fg=color))
+
+    def update_color(self, color):
+        self._color = color
+        self.config(fg=color, highlightbackground=color, bg=PANEL)
+
+
+class SectionLabel(tk.Frame):
+    def __init__(self, parent, text, **kw):
+        super().__init__(parent, bg=BG, **kw)
+        tk.Label(self, text=text, bg=BG, fg=CYAN,
+                 font=(FONT_MONO, 9, "bold")).pack(side="left")
+        tk.Frame(self, bg=BORDER, height=1).pack(
+            side="left", fill="x", expand=True, padx=(8, 0), pady=1)
+
+
+class NumEntry(tk.Frame):
+    def __init__(self, parent, label, default="0", width=7, **kw):
+        super().__init__(parent, bg=BG, **kw)
+        tk.Label(self, text=label, bg=BG, fg=MUTED,
+                 font=(FONT_MONO, 9), width=3, anchor="e").pack(side="left")
+        self.var = tk.StringVar(value=default)
+        tk.Entry(
+            self, textvariable=self.var, width=width,
+            bg=PANEL, fg=CYAN,
+            insertbackground=CYAN,
+            relief="flat", font=(FONT_MONO, 10),
+            highlightthickness=1, highlightbackground=BORDER
+        ).pack(side="left", padx=4)
+
+    def get_int(self):
+        return int(self.var.get())
+
+    def get_float(self):
+        return float(self.var.get())
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# FENÊTRE CAMÉRA (Toplevel indépendante)
+# ══════════════════════════════════════════════════════════════════════════
+class CameraWindow(tk.Toplevel):
+    """
+    Fenêtre caméra séparée.
+    Reçoit une référence au CNCController pour l'overlay de position.
+    """
+    CAM_W, CAM_H = 640, 480
+
+    def __init__(self, master, cnc: CNCController):
+        super().__init__(master)
+        self.cnc         = cnc
+        self.title("CNC — Webcam")
+        self.configure(bg=BG)
+        self.resizable(True, True)
+
+        self.cam         = None
+        self.cam_active  = False
+        self._photo_ref  = None
+
+        self._build()
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    def _build(self):
+        # ── En-tête ──
+        header = tk.Frame(self, bg=BG, padx=10, pady=8)
+        header.pack(fill="x")
+        tk.Label(header, text="WEBCAM", bg=BG, fg=CYAN,
+                 font=(FONT_MONO, 12, "bold")).pack(side="left")
+
+        # ── Contrôles ──
+        ctrl = tk.Frame(self, bg=BG, padx=10)
+        ctrl.pack(fill="x", pady=4)
+
+        tk.Label(ctrl, text="Index :", bg=BG, fg=MUTED,
+                 font=(FONT_MONO, 9)).pack(side="left")
+        self.var_cam = tk.StringVar(value="0")
+        tk.Entry(ctrl, textvariable=self.var_cam, width=3,
+                 bg=PANEL, fg=CYAN, insertbackground=CYAN,
+                 relief="flat", font=(FONT_MONO, 10),
+                 highlightthickness=1, highlightbackground=BORDER
+                 ).pack(side="left", padx=6)
+
+        self.btn_cam = FlatButton(ctrl, "▶  DÉMARRER", self._toggle_cam,
+                                  color=GREEN, width=13)
+        self.btn_cam.pack(side="left", padx=4)
+
+        self.btn_capture = FlatButton(ctrl, "📷  CAPTURER", self._capturer,
+                                      color=ORANGE, width=13)
+        self.btn_capture.pack(side="left", padx=4)
+
+        # ── Canvas vidéo ──
+        self.canvas_cam = tk.Canvas(
+            self, width=self.CAM_W, height=self.CAM_H,
+            bg="#000000",
+            highlightthickness=1, highlightbackground=BORDER
+        )
+        self.canvas_cam.pack(padx=10, pady=6)
+        self._draw_placeholder()
+
+        # ── Options overlay ──
+        opt = tk.Frame(self, bg=BG, padx=10)
+        opt.pack(anchor="w", pady=(0, 8))
+        self.var_reticule    = tk.BooleanVar(value=True)
+        self.var_overlay_pos = tk.BooleanVar(value=True)
+        self.var_overlay_end = tk.BooleanVar(value=True)
+
+        for text, var in [
+            ("Réticule",           self.var_reticule),
+            ("Position",           self.var_overlay_pos),
+            ("Fin de course",      self.var_overlay_end),
+        ]:
+            tk.Checkbutton(
+                opt, text=text, variable=var,
+                bg=BG, fg=TEXT, selectcolor=PANEL,
+                activebackground=BG,
+                font=(FONT_MONO, 9), cursor="hand2"
+            ).pack(side="left", padx=8)
+
+        # ── Barre de statut caméra ──
+        self.lbl_cam_status = tk.Label(
+            self, text="●  Caméra inactive",
+            bg=BG, fg=MUTED, font=(FONT_MONO, 8), anchor="w"
+        )
+        self.lbl_cam_status.pack(fill="x", padx=10, pady=(0, 6))
+
+    def _draw_placeholder(self):
+        self.canvas_cam.delete("all")
+        self.canvas_cam.create_rectangle(
+            0, 0, self.CAM_W, self.CAM_H, fill="#000000", outline=""
+        )
+        self.canvas_cam.create_text(
+            self.CAM_W // 2, self.CAM_H // 2,
+            text="[ CAMÉRA INACTIVE ]",
+            fill=MUTED, font=(FONT_MONO, 14)
+        )
+
+    def _toggle_cam(self):
+        if not self.cam_active:
+            try: idx = int(self.var_cam.get())
+            except ValueError: idx = 0
+            self.cam = cv2.VideoCapture(idx)
+            if not self.cam.isOpened():
+                self.lbl_cam_status.config(
+                    text=f"●  Impossible d'ouvrir la caméra {idx}", fg=RED)
+                return
+            self.cam_active = True
+            self.btn_cam.config(text="■  ARRÊTER")
+            self.btn_cam.update_color(RED)
+            self.lbl_cam_status.config(
+                text=f"●  Caméra active (index {idx})", fg=GREEN)
+            threading.Thread(target=self._cam_loop, daemon=True).start()
+        else:
+            self.cam_active = False
+            if self.cam: self.cam.release()
+            self.btn_cam.config(text="▶  DÉMARRER")
+            self.btn_cam.update_color(GREEN)
+            self._draw_placeholder()
+            self.lbl_cam_status.config(text="●  Caméra inactive", fg=MUTED)
+
+    def _cam_loop(self):
+        while self.cam_active:
+            ok, frame = self.cam.read()
+            if not ok:
+                break
+
+            frame = cv2.resize(frame, (self.CAM_W, self.CAM_H))
+
+            # Overlay position
+            if self.var_overlay_pos.get():
+                label = f"X:{self.cnc.pos_x}  Y:{self.cnc.pos_y}"
+                cv2.putText(frame, label, (10, 24),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.65,
+                            (0, 229, 255), 1, cv2.LINE_AA)
+
+            # Overlay fin de course
+            if self.var_overlay_end.get():
+                ex, ey = self.cnc.lire_endstops()
+                es_txt = f"EndX:{'[!]' if ex else 'OK'}  EndY:{'[!]' if ey else 'OK'}"
+                color_es = (0, 100, 255) if (ex or ey) else (0, 200, 100)
+                cv2.putText(frame, es_txt, (10, 48),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.55,
+                            color_es, 1, cv2.LINE_AA)
+
+            # Réticule
+            if self.var_reticule.get():
+                cx, cy = self.CAM_W // 2, self.CAM_H // 2
+                c = (0, 229, 255)
+                cv2.line(frame, (cx - 40, cy), (cx + 40, cy), c, 1)
+                cv2.line(frame, (cx, cy - 40), (cx, cy + 40), c, 1)
+                cv2.circle(frame, (cx, cy), 25, c, 1)
+
+            rgb   = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            img   = Image.fromarray(rgb)
+            photo = ImageTk.PhotoImage(image=img)
+            self._photo_ref = photo
+            self.after(0, lambda ph=photo: self._show_frame(ph))
+            time.sleep(0.033)
+
+    def _show_frame(self, photo):
+        self.canvas_cam.delete("all")
+        self.canvas_cam.create_image(0, 0, anchor="nw", image=photo)
+
+    def _capturer(self):
+        if not self.cam_active or self.cam is None:
+            self.lbl_cam_status.config(text="●  Caméra inactive", fg=RED)
+            return
+        ok, frame = self.cam.read()
+        if ok:
+            nom = f"capture_{int(time.time())}.png"
+            cv2.imwrite(nom, frame)
+            self.lbl_cam_status.config(
+                text=f"●  Capture → {nom}", fg=YELLOW)
+        else:
+            self.lbl_cam_status.config(text="●  Échec capture", fg=RED)
+
+    def _on_close(self):
+        self.cam_active = False
+        if self.cam:
+            self.cam.release()
+        self.destroy()
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# APPLICATION PRINCIPALE — FENÊTRE DE COMMANDE
+# ══════════════════════════════════════════════════════════════════════════
+class App(tk.Tk):
+
+    ENDSTOP_POLL_MS = 150   # intervalle de polling des fin de course (ms)
+
+    def __init__(self):
+        super().__init__()
+        self.title("CNC Control Panel — Commande")
+        self.configure(bg=BG)
+        self.resizable(True, True)
+        self.minsize(440, 820)
+
+        self.cnc         = CNCController()
+        self._moving     = False
+        self._cam_win    = None   # référence à la CameraWindow
+
+        self._build()
+        self._poll_endstops()     # démarre la boucle de surveillance
+        self.protocol("WM_DELETE_WINDOW", self._quit)
+
+    # ══════════════════════════════════════════════════════════════════════
+    # CONSTRUCTION
+    # ══════════════════════════════════════════════════════════════════════
+    def _build(self):
+        p = tk.Frame(self, bg=BG, padx=14, pady=14)
+        p.pack(fill="both", expand=True)
+
+        self._build_connexion(p)
+        self._build_position_display(p)
+        self._build_endstops(p)
+        self._build_deplacement(p)
+        self._build_jog(p)
+        self._build_actionneurs(p)
+        self._build_log(p)
+        self._build_cam_button(p)
+
+    # ── Connexion ──────────────────────────────────────────────────────────
+    def _build_connexion(self, p):
+        SectionLabel(p, "CONNEXION").pack(fill="x", pady=(0, 6))
+
+        row = tk.Frame(p, bg=BG)
+        row.pack(fill="x", pady=2)
+
+        tk.Label(row, text="Port :", bg=BG, fg=TEXT,
+                 font=(FONT_MONO, 9)).pack(side="left")
+        self.var_port = tk.StringVar(value="COM14")
+        tk.Entry(row, textvariable=self.var_port, width=7,
+                 bg=PANEL, fg=ORANGE, insertbackground=ORANGE,
+                 relief="flat", font=(FONT_MONO, 10),
+                 highlightthickness=1, highlightbackground=BORDER
+                 ).pack(side="left", padx=6)
+
+        self.btn_conn = FlatButton(row, "CONNECTER", self._toggle_connexion,
+                                   color=GREEN, width=11)
+        self.btn_conn.pack(side="left")
+
+        self.lbl_status = tk.Label(
+            p, text="●  DÉCONNECTÉ",
+            bg=BG, fg=RED, font=(FONT_MONO, 9, "bold")
+        )
+        self.lbl_status.pack(anchor="w", pady=(4, 10))
+
+    # ── Affichage position ─────────────────────────────────────────────────
+    def _build_position_display(self, p):
+        SectionLabel(p, "POSITION").pack(fill="x", pady=(0, 6))
+        card = tk.Frame(p, bg=PANEL, padx=12, pady=8)
+        card.pack(fill="x")
+
+        self.lbl_px = tk.Label(card, text="X :        0 pas",
+                                bg=PANEL, fg=TEXT,
+                                font=(FONT_MONO, 12, "bold"), anchor="w")
+        self.lbl_px.pack(fill="x")
+        self.lbl_py = tk.Label(card, text="Y :        0 pas",
+                                bg=PANEL, fg=TEXT,
+                                font=(FONT_MONO, 12, "bold"), anchor="w")
+        self.lbl_py.pack(fill="x")
+
+    # ── Fin de course ──────────────────────────────────────────────────────
+    def _build_endstops(self, p):
+        SectionLabel(p, "FIN DE COURSE").pack(fill="x", pady=(12, 6))
+
+        card = tk.Frame(p, bg=PANEL, padx=12, pady=10)
+        card.pack(fill="x")
+
+        # Indicateurs visuels
+        ind_row = tk.Frame(card, bg=PANEL)
+        ind_row.pack(fill="x", pady=(0, 6))
+
+        # Endstop X
+        fx = tk.Frame(ind_row, bg=PANEL)
+        fx.pack(side="left", expand=True)
+        tk.Label(fx, text="ENDSTOP X", bg=PANEL, fg=MUTED,
+                 font=(FONT_MONO, 8)).pack()
+        self.lbl_end_x = tk.Label(fx, text="●  OK",
+                                   bg=PANEL, fg=GREEN,
+                                   font=(FONT_MONO, 11, "bold"))
+        self.lbl_end_x.pack()
+
+        # Séparateur vertical
+        tk.Frame(ind_row, bg=BORDER, width=1).pack(
+            side="left", fill="y", padx=12)
+
+        # Endstop Y
+        fy = tk.Frame(ind_row, bg=PANEL)
+        fy.pack(side="left", expand=True)
+        tk.Label(fy, text="ENDSTOP Y", bg=PANEL, fg=MUTED,
+                 font=(FONT_MONO, 8)).pack()
+        self.lbl_end_y = tk.Label(fy, text="●  OK",
+                                   bg=PANEL, fg=GREEN,
+                                   font=(FONT_MONO, 11, "bold"))
+        self.lbl_end_y.pack()
+
+        # Simulation fin de course (visible seulement en mode sim)
+        self.frame_sim_end = tk.Frame(card, bg=PANEL)
+        self.frame_sim_end.pack(fill="x", pady=(6, 0))
+        tk.Label(self.frame_sim_end, text="Simulation :",
+                 bg=PANEL, fg=MUTED, font=(FONT_MONO, 8)).pack(side="left")
+
+        self.var_sim_ex = tk.BooleanVar(value=False)
+        self.var_sim_ey = tk.BooleanVar(value=False)
+
+        tk.Checkbutton(
+            self.frame_sim_end, text="EndX",
+            variable=self.var_sim_ex,
+            command=lambda: self.cnc.simuler_endstop("X", self.var_sim_ex.get()),
+            bg=PANEL, fg=TEXT, selectcolor=BG,
+            activebackground=PANEL,
+            font=(FONT_MONO, 9), cursor="hand2"
+        ).pack(side="left", padx=8)
+
+        tk.Checkbutton(
+            self.frame_sim_end, text="EndY",
+            variable=self.var_sim_ey,
+            command=lambda: self.cnc.simuler_endstop("Y", self.var_sim_ey.get()),
+            bg=PANEL, fg=TEXT, selectcolor=BG,
+            activebackground=PANEL,
+            font=(FONT_MONO, 9), cursor="hand2"
+        ).pack(side="left", padx=8)
+
+        # N'affiche le bloc simulation que si pyfirmata absent
+        if FIRMATA_OK:
+            self.frame_sim_end.pack_forget()
+
+    # ── Déplacement absolu ─────────────────────────────────────────────────
+    def _build_deplacement(self, p):
+        SectionLabel(p, "DÉPLACEMENT ABSOLU").pack(fill="x", pady=(12, 6))
+
+        self.entry_x = NumEntry(p, "X :", "0")
+        self.entry_x.pack(fill="x", pady=2)
+        self.entry_y = NumEntry(p, "Y :", "0")
+        self.entry_y.pack(fill="x", pady=2)
+
+        vrow = tk.Frame(p, bg=BG)
+        vrow.pack(fill="x", pady=4)
+        tk.Label(vrow, text="Vitesse :", bg=BG, fg=MUTED,
+                 font=(FONT_MONO, 9)).pack(side="left")
+        self.var_vitesse = tk.IntVar(value=2)
+        tk.Scale(
+            vrow, from_=1, to=20, orient="horizontal",
+            variable=self.var_vitesse,
+            bg=BG, fg=TEXT, troughcolor=PANEL,
+            highlightthickness=0, length=130, showvalue=True,
+            font=(FONT_MONO, 8)
+        ).pack(side="left", padx=6)
+        tk.Label(vrow, text="ms/pas", bg=BG, fg=MUTED,
+                 font=(FONT_MONO, 8)).pack(side="left")
+
+        brow = tk.Frame(p, bg=BG)
+        brow.pack(fill="x", pady=4)
+        FlatButton(brow, "→ X",  lambda: self._go("X"),  color=CYAN,   width=6).pack(side="left", padx=2)
+        FlatButton(brow, "→ Y",  lambda: self._go("Y"),  color=CYAN,   width=6).pack(side="left", padx=2)
+        FlatButton(brow, "→ XY", lambda: self._go("XY"), color=ORANGE, width=7).pack(side="left", padx=2)
+
+        self.canvas_prog = tk.Canvas(p, bg=PANEL, height=6,
+                                     highlightthickness=0)
+        self.canvas_prog.pack(fill="x", pady=4)
+        self._prog_bar = self.canvas_prog.create_rectangle(
+            0, 0, 0, 6, fill=CYAN, outline=""
+        )
+
+    # ── Jog manuel ────────────────────────────────────────────────────────
+    def _build_jog(self, p):
+        SectionLabel(p, "JOG MANUEL").pack(fill="x", pady=(12, 6))
+
+        self.entry_jog = NumEntry(p, "Δ :", "50", width=6)
+        self.entry_jog.pack(anchor="w", pady=2)
+
+        pad = tk.Frame(p, bg=BG)
+        pad.pack(pady=4)
+
+        FlatButton(pad, "▲  Y+", lambda: self._jog("Y", +1),
+                   color=CYAN, width=9).grid(row=0, column=1, padx=2, pady=2)
+        FlatButton(pad, "◄  X−", lambda: self._jog("X", -1),
+                   color=CYAN, width=9).grid(row=1, column=0, padx=2, pady=2)
+        FlatButton(pad, "X+  ►", lambda: self._jog("X", +1),
+                   color=CYAN, width=9).grid(row=1, column=2, padx=2, pady=2)
+        FlatButton(pad, "▼  Y−", lambda: self._jog("Y", -1),
+                   color=CYAN, width=9).grid(row=2, column=1, padx=2, pady=2)
+
+        hrow = tk.Frame(p, bg=BG)
+        hrow.pack(fill="x", pady=4)
+        FlatButton(hrow, "HOME X",  lambda: self._home("X"),  color=YELLOW, width=8).pack(side="left", padx=2)
+        FlatButton(hrow, "HOME Y",  lambda: self._home("Y"),  color=YELLOW, width=8).pack(side="left", padx=2)
+        FlatButton(hrow, "HOME XY", lambda: self._home("XY"), color=YELLOW, width=9).pack(side="left", padx=2)
+
+        FlatButton(p, "⬛  STOP D'URGENCE", self._stop_urgence,
+                   color=RED, width=24).pack(fill="x", pady=6)
+
+    # ── Actionneurs ────────────────────────────────────────────────────────
+    def _build_actionneurs(self, p):
+        SectionLabel(p, "ACTIONNEURS").pack(fill="x", pady=(12, 6))
+
+        s1 = tk.Frame(p, bg=BG)
+        s1.pack(fill="x", pady=2)
+        tk.Label(s1, text="Servo 1", bg=BG, fg=TEXT,
+                 font=(FONT_MONO, 9), width=8).pack(side="left")
+        self.var_s1 = tk.IntVar(value=90)
+        self.lbl_s1_val = tk.Label(s1, text="90°", bg=BG, fg=CYAN,
+                                    font=(FONT_MONO, 9), width=4)
+        self.lbl_s1_val.pack(side="right")
+        tk.Scale(
+            s1, from_=0, to=180, orient="horizontal",
+            variable=self.var_s1,
+            command=lambda v: [
+                self.cnc.set_servo(1, int(v)),
+                self.lbl_s1_val.config(text=f"{int(float(v))}°")
+            ],
+            bg=BG, fg=TEXT, troughcolor=PANEL,
+            highlightthickness=0, length=180, showvalue=False
+        ).pack(side="left", padx=6, fill="x", expand=True)
+
+        s2 = tk.Frame(p, bg=BG)
+        s2.pack(fill="x", pady=2)
+        tk.Label(s2, text="Servo 2", bg=BG, fg=TEXT,
+                 font=(FONT_MONO, 9), width=8).pack(side="left")
+        self.var_s2 = tk.IntVar(value=90)
+        self.lbl_s2_val = tk.Label(s2, text="90°", bg=BG, fg=CYAN,
+                                    font=(FONT_MONO, 9), width=4)
+        self.lbl_s2_val.pack(side="right")
+        tk.Scale(
+            s2, from_=0, to=180, orient="horizontal",
+            variable=self.var_s2,
+            command=lambda v: [
+                self.cnc.set_servo(2, int(v)),
+                self.lbl_s2_val.config(text=f"{int(float(v))}°")
+            ],
+            bg=BG, fg=TEXT, troughcolor=PANEL,
+            highlightthickness=0, length=180, showvalue=False
+        ).pack(side="left", padx=6, fill="x", expand=True)
+
+        prow = tk.Frame(p, bg=BG)
+        prow.pack(fill="x", pady=6)
+
+        self.var_pompe = tk.BooleanVar(value=False)
+        self.btn_pompe_tog = FlatButton(
+            prow, "POMPE OFF", self._toggle_pompe, color=MUTED, width=11)
+        self.btn_pompe_tog.pack(side="left", padx=2)
+
+        self.var_vanne = tk.BooleanVar(value=False)
+        self.btn_vanne_tog = FlatButton(
+            prow, "VANNE OFF", self._toggle_vanne, color=MUTED, width=11)
+        self.btn_vanne_tog.pack(side="left", padx=2)
+
+    # ── Journal ────────────────────────────────────────────────────────────
+    def _build_log(self, p):
+        SectionLabel(p, "JOURNAL").pack(fill="x", pady=(12, 4))
+        self.log = tk.Text(
+            p, height=5, bg=PANEL, fg="#6EE87C",
+            font=(FONT_MONO, 8), relief="flat",
+            state="disabled", padx=6, pady=4,
+            highlightthickness=1, highlightbackground=BORDER
+        )
+        self.log.pack(fill="x")
+
+    # ── Bouton d'ouverture de la fenêtre caméra ────────────────────────────
+    def _build_cam_button(self, p):
+        SectionLabel(p, "CAMÉRA").pack(fill="x", pady=(12, 6))
+        FlatButton(p, "📷  OUVRIR FENÊTRE CAMÉRA",
+                   self._open_camera_window,
+                   color=CYAN, width=26).pack(fill="x", pady=4)
+
+    # ══════════════════════════════════════════════════════════════════════
+    # FIN DE COURSE — POLLING
+    # ══════════════════════════════════════════════════════════════════════
+    def _poll_endstops(self):
+        """
+        Appelé toutes les ENDSTOP_POLL_MS ms via after().
+        Lit les capteurs, met à jour les voyants, et déclenche
+        un arrêt d'urgence si un fin de course s'active en cours de mouvement.
+        """
+        if self.cnc.connected:
+            ex, ey = self.cnc.lire_endstops()
+            self._update_endstop_ui(ex, ey)
+
+            # Arrêt automatique si fin de course déclenché pendant un mouvement
+            if self._moving and (ex or ey):
+                axes_touches = []
+                if ex: axes_touches.append("X")
+                if ey: axes_touches.append("Y")
+                self._log(f"[ENDSTOP] Fin de course déclenché : "
+                          f"{', '.join(axes_touches)} — arrêt d'urgence")
+                self._stop_urgence()
+
+        self.after(self.ENDSTOP_POLL_MS, self._poll_endstops)
+
+    def _update_endstop_ui(self, ex, ey):
+        """Met à jour les voyants fin de course dans l'interface."""
+        if ex:
+            self.lbl_end_x.config(text="●  DÉCLENCHÉ", fg=RED)
+        else:
+            self.lbl_end_x.config(text="●  OK", fg=GREEN)
+
+        if ey:
+            self.lbl_end_y.config(text="●  DÉCLENCHÉ", fg=RED)
+        else:
+            self.lbl_end_y.config(text="●  OK", fg=GREEN)
+
+    # ══════════════════════════════════════════════════════════════════════
+    # FENÊTRE CAMÉRA
+    # ══════════════════════════════════════════════════════════════════════
+    def _open_camera_window(self):
+        """Ouvre la fenêtre caméra (ou la ramène au premier plan si déjà ouverte)."""
+        if self._cam_win is None or not self._cam_win.winfo_exists():
+            self._cam_win = CameraWindow(self, self.cnc)
+        else:
+            self._cam_win.lift()
+            self._cam_win.focus_force()
+
+    # ══════════════════════════════════════════════════════════════════════
+    # LOGIQUE CONNEXION
+    # ══════════════════════════════════════════════════════════════════════
+    def _toggle_connexion(self):
+        if not self.cnc.connected:
+            ok, msg = self.cnc.connecter(self.var_port.get())
+            if ok:
+                self.lbl_status.config(text="●  CONNECTÉ", fg=GREEN)
+                self.btn_conn.config(text="DÉCONNECTER")
+                self.btn_conn.update_color(RED)
+                self._log(f"[OK] {msg}")
+            else:
+                self._log(f"[ERREUR] {msg}")
+        else:
+            self.cnc.deconnecter()
+            self.lbl_status.config(text="●  DÉCONNECTÉ", fg=RED)
+            self.btn_conn.config(text="CONNECTER")
+            self.btn_conn.update_color(GREEN)
+            self._log("[INFO] Déconnecté")
+
+    # ══════════════════════════════════════════════════════════════════════
+    # LOGIQUE DÉPLACEMENTS
+    # ══════════════════════════════════════════════════════════════════════
+    def _check_connect(self):
+        if not self.cnc.connected:
+            self._log("[ATTENTION] Non connecté")
+            return False
+        return True
+
+    def _check_endstops_before_move(self, axes):
+        """
+        Vérifie que le mouvement demandé n'est pas bloqué par un fin de course.
+        Retourne False et log un message si un endstop actif s'oppose au déplacement.
+        """
+        ex, ey = self.cnc.lire_endstops()
+        if "X" in axes and ex:
+            self._log("[ENDSTOP] Mouvement X bloqué — fin de course X actif")
+            return False
+        if "Y" in axes and ey:
+            self._log("[ENDSTOP] Mouvement Y bloqué — fin de course Y actif")
+            return False
+        return True
+
+    def _go(self, axes):
+        if not self._check_connect(): return
+        if self._moving:
+            self._log("[ATTENTION] Mouvement en cours"); return
+        if not self._check_endstops_before_move(axes): return
+
+        try:
+            cx = self.entry_x.get_int() if "X" in axes else None
+            cy = self.entry_y.get_int() if "Y" in axes else None
+        except ValueError:
+            self._log("[ERREUR] Valeur non valide — entier requis"); return
+
+        self.cnc.vitesse_ms = self.var_vitesse.get()
+        self._start_move(lambda: self._run_go(cx, cy))
+
+    def _run_go(self, cx, cy):
+        if cx is not None:
+            self._log(f"[→] X  vers {cx} pas")
+            self.cnc.aller_a("X", cx, lambda i, t: self._prog(i, t))
+        if cy is not None:
+            self._log(f"[→] Y  vers {cy} pas")
+            self.cnc.aller_a("Y", cy, lambda i, t: self._prog(i, t))
+
+    def _jog(self, axe, sens):
+        if not self._check_connect(): return
+        if self._moving: return
+
+        # Vérification endstop dans la direction du jog
+        ex, ey = self.cnc.lire_endstops()
+        if axe == "X" and sens < 0 and ex:
+            self._log("[ENDSTOP] Jog X− bloqué — fin de course X actif"); return
+        if axe == "Y" and sens < 0 and ey:
+            self._log("[ENDSTOP] Jog Y− bloqué — fin de course Y actif"); return
+
+        try:
+            delta = self.entry_jog.get_int()
+        except ValueError:
+            self._log("[ERREUR] Valeur jog invalide"); return
+
+        cible = (self.cnc.pos_x if axe == "X" else self.cnc.pos_y) + sens * delta
+        self.cnc.vitesse_ms = self.var_vitesse.get()
+        self._start_move(lambda: self.cnc.aller_a(axe, cible))
+
+    def _home(self, axes):
+        if not self._check_connect(): return
+        def run():
+            if "Y" in axes:
+                self._log("[HOME] Homing Y…"); self.cnc.homing("Y")
+                self._log("[HOME] Y OK")
+            if "X" in axes:
+                self._log("[HOME] Homing X…"); self.cnc.homing("X")
+                self._log("[HOME] X OK")
+        self._start_move(run)
+
+    def _start_move(self, fn):
+        self._moving = True
+        self._set_prog(0)
+
+        def run():
+            fn()
+            self._moving = False
+            self.after(0, self._on_move_done)
+
+        threading.Thread(target=run, daemon=True).start()
+
+    def _on_move_done(self):
+        self._set_prog(100)
+        self._update_pos()
+        self._log(f"[OK] Position finale  X={self.cnc.pos_x}  Y={self.cnc.pos_y}")
+        self.after(600, lambda: self._set_prog(0))
+
+    def _prog(self, i, total):
+        pct = int(i / total * 100) if total else 0
+        self.after(0, lambda: self._set_prog(pct))
+
+    def _set_prog(self, pct):
+        w = self.canvas_prog.winfo_width()
+        if w < 2: return
+        x1 = int(w * pct / 100)
+        self.canvas_prog.coords(self._prog_bar, 0, 0, x1, 6)
+
+    def _update_pos(self):
+        self.lbl_px.config(text=f"X : {self.cnc.pos_x:8d} pas")
+        self.lbl_py.config(text=f"Y : {self.cnc.pos_y:8d} pas")
+
+    def _stop_urgence(self):
+        self.cnc.stop_urgence()
+        self._moving = False
+        self._log("[STOP] Arrêt d'urgence déclenché")
+        self._update_pos()
+
+    # ══════════════════════════════════════════════════════════════════════
+    # ACTIONNEURS
+    # ══════════════════════════════════════════════════════════════════════
+    def _toggle_pompe(self):
+        self.var_pompe.set(not self.var_pompe.get())
+        if self.var_pompe.get():
+            self.cnc.pompe_on()
+            self.btn_pompe_tog.config(text="POMPE  ON")
+            self.btn_pompe_tog.update_color(GREEN)
+            self._log("[POMPE] ON — aspiration active")
+        else:
+            self.cnc.pompe_off()
+            self.btn_pompe_tog.config(text="POMPE OFF")
+            self.btn_pompe_tog.update_color(MUTED)
+            self._log("[POMPE] OFF")
+
+    def _toggle_vanne(self):
+        self.var_vanne.set(not self.var_vanne.get())
+        if self.var_vanne.get():
+            self.btn_vanne_tog.config(text="VANNE  ON")
+            self.btn_vanne_tog.update_color(GREEN)
+            self._log("[VANNE] ON")
+        else:
+            self.btn_vanne_tog.config(text="VANNE OFF")
+            self.btn_vanne_tog.update_color(MUTED)
+            self._log("[VANNE] OFF")
+
+    # ══════════════════════════════════════════════════════════════════════
+    # UTILITAIRES
+    # ══════════════════════════════════════════════════════════════════════
+    def _log(self, msg):
+        h = time.strftime("%H:%M:%S")
+        self.log.config(state="normal")
+        self.log.insert("end", f"[{h}]  {msg}\n")
+        self.log.see("end")
+        self.log.config(state="disabled")
+
+    def _quit(self):
+        if self._cam_win and self._cam_win.winfo_exists():
+            self._cam_win._on_close()
+        self.cnc.deconnecter()
+        self.destroy()
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# LANCEMENT
+# ══════════════════════════════════════════════════════════════════════════
+if __name__ == "__main__":
+    app = App()
+    app.mainloop()
