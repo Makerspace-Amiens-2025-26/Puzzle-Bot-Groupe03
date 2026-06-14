@@ -4,7 +4,7 @@ nav_order: 5
 title: Conception et prototypage
 ---
 
-## Conception et prototypage
+## **CONCEPTIOON ET PROTOTYPAGE**
 
 ## I.Conception électronique 
 
@@ -63,6 +63,8 @@ graph TD
     DX -->|Câble 4 fils| MX[Moteur NEMA 17 - X]
     DY -->|Câble 4 fils| MY[Moteur NEMA 17 - Y]
 ```
+![ing1](https://i.postimg.cc/J0C6BB4q/Capture-d-ecran-2026-06-14-175752.png)
+
 ### 4. La Tête de Préhension (Les 2 Servomoteurs)
 Les deux servomoteurs (MG996R) qui gèrent la descente et la rotation de la ventouse possèdent 3 fils chacun :
 
@@ -91,6 +93,8 @@ graph LR
     P5 -- "Fil Jaune/Orange (Signal)" --> S1
     P6 -- "Fil Jaune/Orange (Signal)" --> S2
 ```
+![ing1](https://i.postimg.cc/28zTRYqT/Capture-d-ecran-2026-06-14-175801.png)
+
 ### 5. L'Aspiration (La carte sur mesure / PCB)
 C'est la carte qui fait l'intermédiaire avec le 12,7 V pour gérer la pneumatique.
 
@@ -126,6 +130,7 @@ graph LR
     MOS1 -- "Puissance (12.7V)" --> P
     MOS2 -- "Puissance (12.7V)" --> V
 ```
+![ing1](https://i.postimg.cc/TYYjNcS0/Capture-d-ecran-2026-06-14-175822.png)
 ### 6. Les Sécurités (Capteurs de fin de course)
 Ce sont les interrupteurs qui disent au robot quand il touche les bords de la table. Ils n'ont que 2 fils (connectés sur les pattes "Normalement Ouvert" et "Commun" de l'interrupteur).
 
@@ -152,6 +157,7 @@ graph LR
     Y -- "Fil Signal" --> CY
     GY -- "Fil Masse" --> CY
 ```
+![ing1](https://i.postimg.cc/mg1HKpSQ/Capture-d-ecran-2026-06-14-175830.png)
 
 # II.Conception mecanique 
 ## Conception Mécanique
