@@ -5,7 +5,7 @@ title: Études et choix techniques
 has_children: true
 ---
 
-## ÉTUDE ET CHOIX TECHNIQUE
+## **ÉTUDE ET CHOIX TECHNIQUE**
 
 ## I. Cahier des charges – Projet Puzzle Bot
 ## 1. Contexte
