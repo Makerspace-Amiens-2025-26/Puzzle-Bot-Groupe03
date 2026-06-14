@@ -61,7 +61,7 @@ L'axe Z est installé directement sur le chariot de l'axe Y. Il gère la descent
   <img src="https://github.com/Makerspace-Amiens-2025-26/Puzzle-Bot-Groupe03/blob/main/docs/images/Support%20Camera.jpeg" width="200">
   
 
-* **Le support coudé du servomoteur et de la ventouse : ** Tout en bas de l'axe Z, installez le support en coude (à 90°) imprimé en 3D. Fixez-y le servomoteur et la ventouse reliée aux tuyaux en silicone. Ce coude permet à la ventouse de tourner la pièce sur elle-même sans la décaler du centre.
+* **Le support coudé du servomoteur et de la ventouse :** Tout en bas de l'axe Z, installez le support en coude (à 90°) imprimé en 3D. Fixez-y le servomoteur et la ventouse reliée aux tuyaux en silicone. Ce coude permet à la ventouse de tourner la pièce sur elle-même sans la décaler du centre.
 ---
 
 
