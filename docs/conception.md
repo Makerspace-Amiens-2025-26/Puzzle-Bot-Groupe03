@@ -44,7 +44,7 @@ graph TD
     B -- "Fil Noir (-)" --> CNC
     B -- "Fil Noir (-)" --> PCB
 ```
-
+![ing1](https://i.postimg.cc/6QHYzm6H/Capture-d-ecran-2026-06-14-175742.png)
 ### 2. Le Cerveau : Arduino et CNC Shield
 Le branchement principal est le plus simple : la carte d'extension **CNC Shield v3** vient simplement s'emboîter directement sur le dessus de la carte **Arduino Uno**. Il faut juste vérifier que toutes les petites broches en métal rentrent bien dans les trous noirs de l'Arduino sans se tordre.
 
