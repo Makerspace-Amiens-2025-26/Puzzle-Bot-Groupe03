@@ -5,7 +5,7 @@ title: Accueil
 permalink: /
 ---
 
-## BIENVENUE SUR NOTRE DOCUMENTATION
+## **BIENVENUE SUR NOTRE DOCUMENTATION**
 
 Bienvenue dans la documentation du projet PUZZLE BOT. Ce site a pour but de fournir toutes les informations nécessaires pour comprendre, utiliser et reproduire efficacement notre projet.
 
