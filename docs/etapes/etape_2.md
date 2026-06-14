@@ -58,9 +58,10 @@ L'axe Z est installé directement sur le chariot de l'axe Y. Il gère la descent
 * **L'installation de la pompe et de la vanne :** Fixez la mini-pompe à air et l'électrovanne directement sur le chariot mobile. En les plaçant ici, tout le système pneumatique se déplace en même temps que le robot.
 * **Le support de la caméra (Suivi du mouvement) :** Fixez la pièce 3D de la caméra sur la partie mobile de l'axe Z. De cette façon, la caméra descend en même temps que la pompe pour suivre précisément la saisie de la pièce de puzzle.
 
-  <img src="https://github.com/Makerspace-Amiens-2025-26/Puzzle-Bot-Groupe03/blob/main/docs/images/Support%20Camera.jpeg" width="200">
+  ![ing](<img src="https://github.com/Makerspace-Amiens-2025-26/Puzzle-Bot-Groupe03/blob/main/docs/images/Support%20Camera.jpeg" width="200">)
   
-* **Le support coudé du servomoteur et de la ventouse :** Tout en bas de l'axe Z, installez le support en coude (à 90°) imprimé en 3D. Fixez-y le servomoteur et la ventouse reliée aux tuyaux en silicone. Ce coude permet à la ventouse de tourner la pièce sur elle-même sans la décaler du centre.
+
+* **Le support coudé du servomoteur et de la ventouse : ** Tout en bas de l'axe Z, installez le support en coude (à 90°) imprimé en 3D. Fixez-y le servomoteur et la ventouse reliée aux tuyaux en silicone. Ce coude permet à la ventouse de tourner la pièce sur elle-même sans la décaler du centre.
 ---
 
 
