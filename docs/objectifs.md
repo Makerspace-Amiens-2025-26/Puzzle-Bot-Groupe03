@@ -1,10 +1,10 @@
 ---
 layout: default
 nav_order: 3
-title: Objectifs du projet
+title: Présentation Générale du Projet
 ---
 
-## Présentation Générale du Projet
+## **Présentation Générale du Projet**
 
 ## 1. Introduction
 
