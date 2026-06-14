@@ -37,6 +37,6 @@ Voici le poster de notre projet Puzzle Bot, une machine conçue pour résoudre a
 
 
 
-<video src="images/intro_amiens.mp4" controls title="Title"  style="width: 100%;"></video>
+<video src="images/groupe 3 final.mp4" controls title="Title"  style="width: 100%;"></video>
 
 ---
