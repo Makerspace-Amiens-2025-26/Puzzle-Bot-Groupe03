@@ -84,6 +84,7 @@ Ce sont les interrupteurs qui disent au robot quand il touche les bords de la ta
 ### 3. Tête de Préhension (Outil et Axe Z)
 La tête de l'effecteur est l'élément central pour la manipulation des pièces. Elle a été compactée au maximum pour intégrer de multiples fonctions mécaniques :
 * *Déplacement vertical (Axe Z) :* Un système de pignon-crémaillère a été intégré pour convertir le mouvement de rotation du moteur en un déplacement vertical linéaire de la ventouse.
+* ![Conception de la tête de préhension](https://i.postimg.cc/dVV21pxH/Capture-d-ecran-2026-06-15-175727.png)
 * *Rotation de la pièce :* Un support orientable est fixé au bout de la crémaillère pour faire pivoter la ventouse, permettant d'ajuster l'angle de la pièce de puzzle avec précision avant sa pose.
 * *Intégration pneumatique :* La tête dispose de supports de fixation dédiés pour embarquer directement la pompe à vide et l'électrovanne. Cette proximité avec la ventouse réduit la longueur du circuit d'air et garantit un temps de réponse immédiat lors de la préhension et du relâchement.
 
