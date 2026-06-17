@@ -1,7 +1,7 @@
 ---
 layout: default
 nav_order: 2
-parent: Etapes de fabrication
+parent: Conception et prototypage
 title: Conception electronique
 ---
 
