@@ -14,7 +14,7 @@ Les essais ont consisté à comparer différentes versions des pièces afin d'é
 Différentes versions de supports imprimés en bois pour le dispositif de prehesion 
 la piece en bois n'ai pas pu stabilise a structure et cella s'est donc soldé par un echec
 
-![Whats-App-Image-2026-06-13-at-13-234.jpg](https://i.postimg.cc/L60VLd0H/Whats-App-Image-2026-06-13-at-13-234.jpg)]width="200"(https://postimg.cc/nCB7fWJ5)
+<img src="https://i.postimg.cc/L60VLd0H/Whats-App-Image-2026-06-13-at-13-234.jpg" width="300">
 
 les pieces on eté revue et ameeliorer en impression impression 3d et cella nous a aussi permis d'integere directement le capteur fin de courses 
 
