@@ -73,7 +73,7 @@ Les choix techniques concernant la conception de notre machine ont été réalis
 
 Le châssis principal est constitué de profilés en aluminium, offrant à la fois rigidité. De nouveaux pieds supports ont été conçus afin de surélever le plateau de travail. Cette modification permet le passage des éléments de transmission et facilite le déplacement des différents axes de la machine.
 
-![PLATEAU SUPPORT](https://i.postimg.cc/3RSTy2yG/Whats-App-Image-2026-06-13-at-19-49-20.jpg)
+![PLATEAU SUPPORT](https://i.postimg.cc/prb9QCMX/Whats-App-Image-2026-06-13-at-19-49-20.jpg)
 
 ## Système de déplacement
 
