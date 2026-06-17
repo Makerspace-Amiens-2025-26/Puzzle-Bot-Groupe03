@@ -5,6 +5,6 @@ parent: Conception et prototypage
 title: Conception electronique
 ---
 
-## **Conception électronique **
+## **Conception électronique**
 
 ---
