@@ -60,6 +60,15 @@ Pourquoi c'est mieux :
 
   [![Whats-App-Image-3.jpg](https://i.postimg.cc/hG2qgttZ/Whats-App-Image-3.jpg)](https://postimg.cc/qt6Fx0n2)
 
+# Programmation
+
+* *Génération des pas :* La génération des signaux Step et Dir a été gérée de façon optimisée pour garantir la fluidité sans alourdir le processeur de l'Arduino.
+* *Gestion des Servomoteurs :* L'utilisation de la bibliothèque Servo.h a facilité la conversion des angles issus de la vision en signaux PWM.
+* *Synchronisation Pneumatique :* L'arrêt de la pompe ne suffisant pas à relâcher la pièce à cause de l'air résiduel, le programme ouvre l'électrovanne juste après l'arrêt de la pompe afin de "casser le vide" instantanément.
+  
+pour y remedier nous avons mis sur pied une interface grafique afin de controler distintement chaque dospositif pour pouvoir mieux uunifrmioser le deplacement de la machines 
+
+[![interface-graphique.png](https://i.postimg.cc/Cxd2Dshn/interface-graphique.png)](https://postimg.cc/XrSx6Fyn)
 
 ## Résultats obtenus
 
