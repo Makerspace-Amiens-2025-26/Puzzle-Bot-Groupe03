@@ -21,7 +21,7 @@ les pieces on eté revue et ameeliorer en impression impression 3d et cella nous
 ![Whats-App-Image-2026-06-13-at-13-233.jpg](https://i.postimg.cc/qRkKWQZ1/Whats-App-Image-2026-06-13-at-13-233.jpg)](https://postimg.cc/XZzXCKW5)
 
 la tete de prehension a ete pensé en suport fixe avec un gros chassis cella ne nous a pas permis d'inrtegrer le deplagement et la rotation des pieces saisis cet option a donc ete un echec 
-![Whats-App-Image-2026-06-1.jpg](https://i.postimg.cc/90yrM7SX/Whats-App-Image-2026-06-1.jpg)width="200"
+![Whats-App-Image-2026-06-1.jpg](https://i.postimg.cc/90yrM7SX/Whats-App-Image-2026-06-1.jpg) width="200"
 
 Les résultats obtenus ont permis d'identifier plusieurs améliorations à apporter, notamment le renforcement de certaines zones mécaniques, l'ajout de points de fixation supplémentaires et l'optimisation de la géométrie de certaines pièces pour faciliter leur montage.
 
