@@ -59,9 +59,20 @@ Malgré les difficultés rencontrées, les différentes phases d'essais et d'am�
 Les essais ont consisté à comparer différentes versions des pièces afin d'évaluer leur rigidité, leur facilité d'assemblage et leur compatibilité avec les profilés aluminium, les moteurs et les autres éléments de la structure. Les pièces présentées ci-dessous illustrent les différentes itérations réalisées au cours du projet.
 
 
-[![Whats-App-Image-2026-06-13-at-13-23-43.jpg](https://i.postimg.cc/LssR713Q/Whats-App-Image-2026-06-13-at-13-23-43.jpg)](https://postimg.cc/fV16SkFY)
-[![Whats-App-Image-2026-06-13-at-13-234.jpg](https://i.postimg.cc/L60VLd0H/Whats-App-Image-2026-06-13-at-13-234.jpg)](https://postimg.cc/nCB7fWJ5)
-[![Whats-App-Image-2026-06-13-at-13-233.jpg](https://i.postimg.cc/qRkKWQZ1/Whats-App-Image-2026-06-13-at-13-233.jpg)](https://postimg.cc/XZzXCKW5)
-[![Whats-App-Image-2026-06-1.jpg](https://i.postimg.cc/90yrM7SX/Whats-App-Image-2026-06-1.jpg)](https://postimg.cc/N2fgC5BZ)
+<p align="center">
+<img src="https://i.postimg.cc/LssR713Q/Whats-App-Image-2026-06-13-at-13-23-43.jpg)" width="300">
+</p>
+
+<p align="center">
+<img src="https://i.postimg.cc/L60VLd0H/Whats-App-Image-2026-06-13-at-13-234.jpg" width="300">
+</p>
+
+<p align="center">
+<img src="https://i.postimg.cc/qRkKWQZ1/Whats-App-Image-2026-06-13-at-13-233.jpg" width="300">
+</p>
+
+<p align="center">
+<img src="https://i.postimg.cc/90yrM7SX/Whats-App-Image-2026-06-1.jpg" width="300">
+</p>
 
 
