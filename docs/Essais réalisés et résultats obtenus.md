@@ -8,6 +8,7 @@ title: Essais réalisés et résultats obtenus
 
 Afin de valider les différentes pièces de la machine, plusieurs prototypes ont été réalisés par impression 3D. Les premières versions des supports ont permis de vérifier les dimensions, les interfaces de fixation ainsi que l'intégration des composants mécaniques et électroniques.
 
+#  mecanique
 Les essais ont consisté à comparer différentes versions des pièces afin d'évaluer leur rigidité, leur facilité d'assemblage et leur compatibilité avec les profilés aluminium, les moteurs et les autres éléments de la structure. Les pièces présentées ci-dessous illustrent les différentes itérations réalisées au cours du projet.
 <p align="center">
 <img src="https://i.postimg.cc/LssR713Q/Whats-App-Image-2026-06-13-at-13-23-43.jpg)" width="300">
@@ -28,7 +29,37 @@ la tete de prehension a ete pensé en suport fixe avec un gros chassis cella ne 
 </p>
 Les résultats obtenus ont permis d'identifier plusieurs améliorations à apporter, notamment le renforcement de certaines zones mécaniques, l'ajout de points de fixation supplémentaires et l'optimisation de la géométrie de certaines pièces pour faciliter leur montage.
 
+
 Après plusieurs phases de test et de modification, les pièces finales ont répondu aux exigences de résistance, de précision et d'intégration nécessaires au bon fonctionnement de la machine. Ces essais ont également permis de réduire les risques d'erreur lors de l'assemblage final et d'améliorer la fiabilité globale du système.
+
+#  électronique
+
+Pour commander la pompe et l'électrovanne, nous avons utiliser un module L91105 mais malheureusement qui n'a pas permis le bon fonctionnement de ceux-ci.
+
+![Whats-App-Image-2026-06-17-at-18-14-44.jpg](https://i.postimg.cc/fWFgx0PD/Whats-App-Image-2026-06-17-at-18-14-44.jpg)
+1. Pourquoi utiliser le L9110S au début ?
+   
+Le L9110S est un Double Pont en H. On l'a choisi initialement pour plusieurs raisons :
+ * Disponibilité : C'est un composant très commun dans les kits Arduino.
+ * Polyvalence : Il possède deux canaux indépendants, ce qui permet de contrôler deux charges (pompe + vanne) avec une seule carte.
+ * Interface simple : Il communique très facilement en niveaux logiques avec l'Arduino.
+ 
+2. Pourquoi cela ne fonctionne pas pour le projet ?
+   
+Le L9110S a atteint ses limites physiques pour plusieurs raisons critiques :
+ Le courant d'appel: Au démarrage, une pompe à vide et une électrovanne consomment beaucoup plus de courant que lorsqu'elles sont en régime établi. Le L9110S a une capacité de courant limitée (généralement < 800mA). Le pic de démarrage fait surchauffer, voire griller instantanément la puce.
+ Les charges inductives (Force contre-électromotrice) : Contrairement à une LED, une pompe ou une vanne contient une bobine. Quand tu coupes l'alimentation, la bobine décharge une pointe de tension extrêmement élevée (plusieurs centaines de volts). Le L9110S n'a pas de protection interne suffisante contre ces retours de courant, ce qui finit par détruire les transistors du module.
+ 
+3. La solution pour résoudre ce problème
+
+Pour resoudre ce problème, nous avons utiliser des MOSFETs de puissance (type N-Channel) plus Précisement le ZVN4306A avec une diode de roue libre.
+Pourquoi c'est mieux :
+ * Résistance ultra-faible : Le MOSFET laisse passer quasiment tout le courant. La pompe reçoit les 12.7V réels.
+ *  Robustesse : Un MOSFET de puissance peut gérer des courants bien plus élevés et ne craint pas la chauffe comme le petit module L9110S.
+ * La Diode de Roue Libre (Crucial) : On ajoute une diode  aux bornes de la pompe/vanne. Elle sert de "soupape de sécurité" qui boucle le courant de retour de la bobine lors de l'extinction, protégeant ainsi tout ton système.
+
+  [![Whats-App-Image-3.jpg](https://i.postimg.cc/hG2qgttZ/Whats-App-Image-3.jpg)](https://postimg.cc/qt6Fx0n2)
+
 
 ## Résultats obtenus
 
