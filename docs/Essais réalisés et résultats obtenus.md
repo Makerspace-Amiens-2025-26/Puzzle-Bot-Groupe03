@@ -1,6 +1,6 @@
 ---
 layout: default
-nav_order: 6
+nav_order: 5
 title: Essais réalisés et résultats obtenus
 ---
 
