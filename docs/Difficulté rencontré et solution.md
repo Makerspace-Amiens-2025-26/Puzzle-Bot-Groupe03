@@ -75,4 +75,3 @@ Les essais ont consisté à comparer différentes versions des pièces afin d'é
 <img src="https://i.postimg.cc/90yrM7SX/Whats-App-Image-2026-06-1.jpg" width="300">
 </p>
 
-
