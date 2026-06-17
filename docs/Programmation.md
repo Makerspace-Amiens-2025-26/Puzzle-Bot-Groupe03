@@ -33,8 +33,3 @@ Avant de pouvoir placer une pièce, une routine d'initialisation (Homing) s'exé
 2.  *Détection :* L'écrasement des capteurs de fin de course stoppe les moteurs.
 3.  *Calibrage :* Cette position physique devient le point de coordonnées (0,0) de référence pour tous les futurs déplacements.
 
-### Prototypage et Défis de Programmation
-
-* *Génération des pas :* La génération des signaux Step et Dir a été gérée de façon optimisée pour garantir la fluidité sans alourdir le processeur de l'Arduino.
-* *Gestion des Servomoteurs :* L'utilisation de la bibliothèque Servo.h a facilité la conversion des angles issus de la vision en signaux PWM.
-* *Synchronisation Pneumatique :* L'arrêt de la pompe ne suffisant pas à relâcher la pièce à cause de l'air résiduel, le programme ouvre l'électrovanne juste après l'arrêt de la pompe afin de "casser le vide" instantanément.
