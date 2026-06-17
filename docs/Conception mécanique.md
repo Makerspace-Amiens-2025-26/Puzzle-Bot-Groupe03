@@ -5,8 +5,8 @@ parent: Conception et prototypage
 title: Conception mecanique
 ---
 
-## **CONCEPTION MECANIQUE**
-# II.Conception mecanique 
+
+# I.Conception mecanique 
 ## Conception Mécanique
 
 ### 1. Structure Principale et Châssis
