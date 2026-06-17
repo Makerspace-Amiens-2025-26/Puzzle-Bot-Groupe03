@@ -8,7 +8,7 @@ title: Essais réalisés et résultats obtenus
 
 Afin de valider les différentes pièces de la machine, plusieurs prototypes ont été réalisés par impression 3D. Les premières versions des supports ont permis de vérifier les dimensions, les interfaces de fixation ainsi que l'intégration des composants mécaniques et électroniques.
 
-#  mecanique
+#  Mécanique
 Les essais ont consisté à comparer différentes versions des pièces afin d'évaluer leur rigidité, leur facilité d'assemblage et leur compatibilité avec les profilés aluminium, les moteurs et les autres éléments de la structure. Les pièces présentées ci-dessous illustrent les différentes itérations réalisées au cours du projet.
 <p align="center">
 <img src="https://i.postimg.cc/LssR713Q/Whats-App-Image-2026-06-13-at-13-23-43.jpg)" width="300">
@@ -32,7 +32,7 @@ Les résultats obtenus ont permis d'identifier plusieurs améliorations à appor
 
 Après plusieurs phases de test et de modification, les pièces finales ont répondu aux exigences de résistance, de précision et d'intégration nécessaires au bon fonctionnement de la machine. Ces essais ont également permis de réduire les risques d'erreur lors de l'assemblage final et d'améliorer la fiabilité globale du système.
 
-#  électronique
+#  Electronique
 
 Pour commander la pompe et l'électrovanne, nous avons utiliser un module L91105 mais malheureusement qui n'a pas permis le bon fonctionnement de ceux-ci.
 
