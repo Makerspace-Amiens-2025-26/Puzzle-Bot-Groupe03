@@ -9,7 +9,7 @@ title: Essais réalisés et résultats obtenus
 Afin de valider les différentes pièces de la machine, plusieurs prototypes ont été réalisés par impression 3D. Les premières versions des supports ont permis de vérifier les dimensions, les interfaces de fixation ainsi que l'intégration des composants mécaniques et électroniques.
 
 Les essais ont consisté à comparer différentes versions des pièces afin d'évaluer leur rigidité, leur facilité d'assemblage et leur compatibilité avec les profilés aluminium, les moteurs et les autres éléments de la structure. Les pièces présentées ci-dessous illustrent les différentes itérations réalisées au cours du projet.
-[![Whats-App-Image-2026-06-13-at-13-23-43.jpg](https://i.postimg.cc/LssR713Q/Whats-App-Image-2026-06-13-at-13-23-43.jpg)](https://postimg.cc/fV16SkFY)
+<img src="https://i.postimg.cc/LssR713Q/Whats-App-Image-2026-06-13-at-13-23-43.jpg)" width="300">
 
 Différentes versions de supports imprimés en bois pour le dispositif de prehesion 
 la piece en bois n'ai pas pu stabilise a structure et cella s'est donc soldé par un echec
